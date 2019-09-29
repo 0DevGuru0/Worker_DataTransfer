@@ -1,0 +1,25 @@
+{
+  "name": "datatransfer",
+  "version": "1.0.0",
+  "description": "transfer data from redis to mongodb__ worker__reactProject",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm run test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/afsan007/worker_DataTransfer.git"
+  },
+  "keywords": [
+    "worker",
+    "dataTransfer",
+    "redis",
+    "mongodb"
+  ],
+  "author": "sajjadHadafi",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/afsan007/worker_DataTransfer/issues"
+  },
+  "homepage": "https://github.com/afsan007/worker_DataTransfer#readme"
+}
