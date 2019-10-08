@@ -1,10 +1,27 @@
-const {Schema,model} = require('mongoose');
+const { Schema, model } = require('mongoose');
 
 const Users = new Schema({
-    month:{ type:Date },
-    onlineCount:{ type:Number },
-    totalVerified:{ type:Number },
-    totalusers:{ type:Number }
+    Year: {
+        type: Number,
+        required:true,
+        index: {
+            sparse: true,
+            background: true
+        }
+    },
+    Month: {
+        type: Number,
+        unique:true,
+        required:true
+    },
+    onlineCount: [{
+        type: Schema.Types.ObjectId,
+        ref: 'onlineUsersCount'
+    }],
+    totalUsers:[{
+        type: Schema.Types.ObjectId,
+        ref: 'totalUsersCount'
+    }],
+    // totalVerified:{ type:Number },
 });
-
-module.exports = model('Users',Users)
+module.exports = model('Users', Users)
