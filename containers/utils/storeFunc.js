@@ -1,5 +1,6 @@
-const onlineUsersCount  = require("../../model/onlineCount");
-const totalUsersCount   = require("../../model/totalUsersCount");
+const onlineUsersCount  = require("../../model/users/onlineCount");
+const totalUsersCount   = require("../../model/users/totalUsersCount");
+const totalVerifiedUsers   = require("../../model/users/totalVerifiedUsers");
 const Users             = require("../../model/users");
 
 const chalk     = require('chalk');
@@ -21,7 +22,7 @@ module.exports = (redis,deferred,redisBucket,logBucket,collectionName)=>{
         // *InitialCheck
         if(!reply){ 
         console.log(chalk.green(`[${logBucket}][Redis]`),"Nothing Exist To Store.")
-        deferred.resolve() 
+        deferred.resolve(redis) 
         }
         if(typeof reply === "string"){ reply = JSON.parse(reply) }
         if(err){deferred.reject(new Error(e.message))}
@@ -64,9 +65,15 @@ module.exports = (redis,deferred,redisBucket,logBucket,collectionName)=>{
             let smallContain = midContain[i]
             let user = await Users.findOne({Year:smallContain.Year,Month:smallContain.Month})
             let userModel = user ? user : new Users({ Year:smallContain.Year,Month:smallContain.Month })
-            let CountModel = new onlineUsersCount({ Days:smallContain[collectionName] })
+            let CountModel = null
+            if(collectionName === 'onlineCount' ){
+                CountModel = new onlineUsersCount({ Days:smallContain[collectionName] })
+            }
             if(collectionName === 'totalUsers' ){
                 CountModel = new totalUsersCount({ Days:smallContain[collectionName] }) 
+            }
+            if(collectionName === 'totalVerifiedUsers'){
+                CountModel = new totalVerifiedUsers({ Days:smallContain[collectionName] }) 
             }
             userModel[collectionName].push(CountModel)
             modelContainer.push(userModel,CountModel)
@@ -75,6 +82,7 @@ module.exports = (redis,deferred,redisBucket,logBucket,collectionName)=>{
         Promise.all(modelContainer.map(el=>el.save()))
             .then(()=>{
             console.log(chalk.green(`[${logBucket}]`),'Saved Data To Database...')
+            console.log(chalk.bold('-------------------------------------------------------------'))
             // *Remove Data From Redis
                 // redis.del(redisBucket,(err,reply)=>{
                 // if(err){
@@ -87,7 +95,7 @@ module.exports = (redis,deferred,redisBucket,logBucket,collectionName)=>{
                 //     console.log(chalk.green(`[${logBucket}]`),'removed from redis.')
                 //     deferred.resolve();
                 // })
-                deferred.resolve()
+                deferred.resolve(redis)
             })
             .catch((e)=>{ deferred.reject(new Error(e.message)); })
         }

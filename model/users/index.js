@@ -22,6 +22,9 @@ const Users = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'totalUsersCount'
     }],
-    // totalVerified:{ type:Number },
+    totalVerifiedUsers:[{
+        type: Schema.Types.ObjectId,
+        ref: 'totalVerifiedUsers'
+    }]
 });
 module.exports = model('Users', Users)

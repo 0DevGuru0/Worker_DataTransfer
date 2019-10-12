@@ -1,11 +1,11 @@
 const Q     = require('q');
-const Users = require("../model/users");
 const chalk = require('chalk');
+const Users = require("../model/users");
 const storeFunction = require('./utils/storeFunc')
 Users.on("index", err => {
   err 
-    ?console.error(chalk.black.bold.bgCyan('[ MongoDB ]'),"Users index error: %s", err) 
-    :console.info(chalk.black.bold.bgCyan('[ MongoDB ]'),"Users indexing complete");
+    ?console.error(chalk.black.bold.bgYellow('[ Users_MongoDB ]'),"Users index error: %s", err) 
+    :console.info(chalk.black.bold.bgYellow('[ Users_MongoDB ]'),"Users indexing complete");
 });
 
 const container = {
@@ -14,9 +14,9 @@ const container = {
     storeFunction(redis,deferred,'online:users:TList','onlineUsersList','onlineCount')
     return deferred.promise;
   },
-  totalUsersVerified: async (redis) => { 
+  totalUsersVerified: redis=> { 
     var deferred = Q.defer();
-    setTimeout(()=>{ console.log('2.totalUsersVerified') },3000)
+    storeFunction(redis,deferred,'total:Verified:UserList','totalUsersVerified','totalVerifiedUsers')
     return deferred.promise;
   },
   totalUsersList: redis=> { 
@@ -27,11 +27,17 @@ const container = {
 };
 
 module.exports = redis => {
- container.onlineUsersList(redis)
+  var deferred = Q.defer();
+  console.log(chalk.bold('-------------------------------------------------------------'))
+  container.onlineUsersList(redis)
     .then(container.totalUsersList)
     .then(container.totalUsersVerified)
+    .then(()=>{
+      console.log(chalk.bold.bgGreen.black('Congratulation!!! Users Data Transferring to MongoDB is successfully done..'))
+      deferred.resolve(redis)
+    })
     .catch(reason=>console.log( chalk.green("[DataTransfer]"), chalk.white.bgRed("[ERROR]") ,reason))
-    .done(()=>{ process.exit(0) })
+  return deferred.promise;
 };
 
 
