@@ -71,7 +71,7 @@ function MongoDB(redis){
 // })
 function DBTransfer(redis){
     var deferred = Q.defer();
-    let transferPeriod = 30*1000
+    let transferPeriod = 7*1000
     // *Data Transferring with use of Time
     console.log(
         chalk.black.bold.bgYellow('[ Data Transfer ]'),
@@ -99,6 +99,13 @@ function DBTransfer(redis){
             console.log(
                 chalk.black.bold.bgYellow('[ Data Transfer ]'),
                 'Transferd Successfully At::',moment().format("dddd, MMMM Do YYYY, h:mm:ss a") ) 
+            process.exit(0) 
+        })
+        .catch((err)=>{
+            console.log(
+                chalk.black.bold.bgRed('[ Data Transfer ]'),
+                // 'Error At::',moment().format("dddd, MMMM Do YYYY, h:mm:ss a"),err ) 
+                err)
             process.exit(0) 
         })
     },transferPeriod)

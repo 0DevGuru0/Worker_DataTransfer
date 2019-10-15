@@ -14,14 +14,20 @@ const visitorsSchema = new Schema({
         unique:true,
         required:true
     },
-    onlineCount: [{
+    onlineCount:{
+        type:Number
+    },
+    totalVisit:{
+        type:Number
+    },
+    onlineList: [{
         type: Schema.Types.ObjectId,
-        ref: 'onlineVisitors'
+        ref: 'onlineVisitorsList'
     }],
-    // pageViews: [{
-    //     type: Schema.Types.ObjectId,
-    //     ref: 'onlineUsersCount'
-    // }],
+    pageViews: [{
+        type: Schema.Types.ObjectId,
+        ref: 'pageViewsCount'
+    }],
     // totalVisit: [{
     //     type: Schema.Types.ObjectId,
     //     ref: 'onlineUsersCount'
