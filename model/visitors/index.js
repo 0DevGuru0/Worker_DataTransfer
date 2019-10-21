@@ -1,9 +1,9 @@
-const {Schema,model} = require('mongoose')
+const { Schema, model } = require('mongoose')
 
 const visitorsSchema = new Schema({
     Year: {
         type: Number,
-        required:true,
+        required: true,
         index: {
             sparse: true,
             background: true
@@ -11,14 +11,16 @@ const visitorsSchema = new Schema({
     },
     Month: {
         type: Number,
-        unique:true,
-        required:true
+        index: {
+            sparse: true,
+            background: true
+        }
     },
-    onlineCount:{
-        type:Number
+    onlineCount: {
+        type: Number
     },
-    totalVisit:{
-        type:Number
+    totalVisit: {
+        type: Number
     },
     onlineList: [{
         type: Schema.Types.ObjectId,
@@ -28,9 +30,9 @@ const visitorsSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'pageViewsCount'
     }],
-    // totalVisit: [{
-    //     type: Schema.Types.ObjectId,
-    //     ref: 'onlineUsersCount'
-    // }],
+    VisitorsState: [{
+        type: Schema.Types.ObjectId,
+        ref: 'monthsVisitorsState'
+    }],
 })
-module.exports = model('Visitors',visitorsSchema)
+module.exports = model('Visitors', visitorsSchema)
