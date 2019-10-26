@@ -23,10 +23,7 @@ async function fetchDataFromRedis(client,deferred,config){
         "2019/06/20": '{"5.121.15.157":3}',
     }
     //*--------------------------------------------------------------------------------
-    if (!primitiveData) {
-        console.log(chalk.green(`[${config.logBucket}][Redis]`), "Nothing Exist To Store.")
-        deferred.resolve(client)
-    }
+
     if (typeof primitiveData === "string") { primitiveData = JSON.parse(primitiveData) }
 
     return primitiveData
@@ -61,11 +58,13 @@ async function prepareDataToStore(primitiveData,config){
         midObj[config.collectionName].push(slimObj)
         midContain.push(midObj)
     }
+    let delKeys = []
     _.forIn(primitiveData, (value, key) => {
         let contain = key.split("/");
         let objYear = +contain[0]
         let objMonth = +contain[1]
         if (objYear <= EdgeYear && objMonth < EdgeMonth) {
+            delKeys.push(key)
             if (midContain.length === 0) {
                 TempObj(contain, primitiveData, key, midContain)
             } else {
@@ -79,7 +78,7 @@ async function prepareDataToStore(primitiveData,config){
             }
         }
     })
-    return midContain
+    return {midContain,delKeys}
 }
 async function storeModels(midContain,config){
     let arrLength = midContain.length;
@@ -118,14 +117,21 @@ async function storeModels(midContain,config){
     }
     return modelContainer;
 }
-async function deleteDataFromRedis(client,deferred,config){
+async function deleteDataFromRedis(client,config,keys){
+    let reply;
     try{
-        await client.del(config.redisBucket)
-        console.log(chalk.green(`[${config.logBucket}]`),'removed from redis.')
-        deferred.resolve();
+        console.log('DELETE::: onlineVisitors-- ',...keys)
+        // reply = await client.hdel(config.redisBucket,...keys)
+        // console.log(chalk.green(`[${config.logBucket}]`),'removed from redis.')
     }catch(err){
         console.log( chalk.green(`[${config.logBucket}]`), chalk.white.bgRed("[ERROR]"), err.message)
-        deferred.resolve()
+    }
+    if(reply===0 ){
+        return{ErrRedis:'Couldn\'t Delete Data From Redis' } 
+    }else{
+        console.log(chalk.green(`[${config.logBucket}]`),'Data Delete From Redis...')
+        console.log(chalk.bold('-------------------------------------------------------------'))
+        return {ErrRedis:null}
     }
 }
 module.exports = async (client, deferred) => {
@@ -137,13 +143,23 @@ module.exports = async (client, deferred) => {
         countBox2       :   "totalVisit"
     }
     let primitiveData   = await fetchDataFromRedis(client,deferred,config)
-    let midContain      = await prepareDataToStore(primitiveData,config)
+    if (!primitiveData) {
+        console.log(chalk.red(`[${config.logBucket}][Redis]`), "Nothing Exist To Store.")
+        console.log(chalk.bold('-------------------------------------------------------------'))
+        return deferred.resolve(client)
+    }
+    let {midContain,delKeys} = await prepareDataToStore(primitiveData,config)
     let modelContainer  = await storeModels(midContain,config)
     Promise.all(modelContainer.map(el => el.save()))
         .then(async () => {
             console.log(chalk.green(`[${config.logBucket}]`), 'Saved Data To Database...')
-            // await deleteDataFromRedis(client,deferred,config)
-            console.log(chalk.bold('-------------------------------------------------------------'))
+            
+            let {ErrRedis} = await deleteDataFromRedis(client,config,delKeys)
+            if(ErrRedis){
+                console.log(chalk.red(`[${config.logBucket}][Redis]`),ErrRedis)
+                console.log(chalk.bold('-------------------------------------------------------------'))
+                return config.deferred.resolve(config.client)   
+            }
             deferred.resolve(client)
         })
         .catch((e) =>deferred.reject(new Error(e.message)))

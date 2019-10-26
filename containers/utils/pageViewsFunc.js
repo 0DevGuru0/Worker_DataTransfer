@@ -6,8 +6,9 @@ const moment    = require('moment'),
     Visitors    = require('../../model/visitors'),
 
     EdgeYear    = +moment().format("YYYY"),
+    // TODO: TEST
     EdgeMonth   = +moment().add(1,"month").format("MM");
-// TODO: const EdgeMonth = +moment().format("MM");
+    // EdgeMonth = +moment().format("MM");
 
 
 async function fetchDataFromRedis(client,deferred){
@@ -34,14 +35,14 @@ function TempObj_small(contain, reply, el){
     slimObj.Detail = Detail
     return slimObj
 }
-function TempObj(contain, reply, el, midContain,config){
+function TempObj(contain, reply, el,config){
     let midObj = {}
     let slimObj = TempObj_small(contain, reply, el)
     midObj.Year = +contain[0]
     midObj.Month = +contain[1]
     midObj[config.collectionName] = []
     midObj[config.collectionName].push(slimObj)
-    midContain.push(midObj)
+    return midObj
 }
 async function DataPrepare(client,deferred,config){
     let reply = await fetchDataFromRedis(client,deferred)
@@ -56,31 +57,36 @@ async function DataPrepare(client,deferred,config){
         let date = reply[i].split(':')[1]
         container[date] = result
     }
+    let delKeys = []
     _.forIn(container, (value, key) => {
         let contain = key.split("/");
         let objYear = +contain[0]
         let objMonth = +contain[1]
         if (objYear <= EdgeYear && objMonth < EdgeMonth) {
+            delKeys.push(key)
             if (midContain.length === 0) {
-                TempObj(contain, container, key, midContain,config.collectionName)
+                midContain.push(TempObj(contain,container,key,config))
             } else {
                 let elem = midContain[midContain.length - 1]
                 if (elem.Year === objYear && elem.Month === objMonth) {
                     elem[config.collectionName].push(TempObj_small(contain, container, key))
-                } else { TempObj(contain, container, key, midContain,config.collectionName); }
+                } else { 
+                    midContain.push(TempObj(contain,container,key,config))
+                }
             }
         }
     })
-    return midContain
-}
-async function StorePrepare(midContain,client,deferred,config){
-    let arrLength = midContain.length;
-    let modelContainer = []
-    let specArr = []
-    if (arrLength === 0) {
+    if ( midContain.length === 0) {
         console.log(chalk.green(`[${config.logBucket}]`), 'Nothing has exist in bucket...')
         deferred.resolve(client)
     }
+    return {midContain,delKeys}
+}
+async function StorePrepare(midContain,deferred,config){
+    let arrLength = midContain.length;
+    let modelContainer = []
+    let specArr = []
+
     console.log(chalk.green(`[${config.logBucket}]`), 'Saving Data To Database...')
     for (let i = 0; i < arrLength; i++) {
 
@@ -113,28 +119,42 @@ async function StorePrepare(midContain,client,deferred,config){
     }
     return modelContainer
 }
-async function deleteDataFromRedis(client,deferred,config){
+async function deleteDataFromRedis(client,keys,deferred,config){
+    let reply1,reply2;
     try{
-        await client.del(config.redisBucket)    
+        //TODO: TEST
+        console.log("DELETE:::","pageViews--",...keys)
+        // reply1 = await client.srem('pageViews:List:keys',...keys) 
+        // reply2 = await client.del(...keys.map(key=>"pageViews:"+key))    
     }catch(err){
         console.log( chalk.green(`[${config.logBucket}]`), chalk.white.bgRed("[ERROR]"), err.message) 
-        deferred.resolve()
+        return deferred.reject(err)
     }
-    console.log(chalk.green(`[${config.logBucket}]`),'removed from client.')
-    deferred.resolve(client);
+    if(reply1===0 || reply2===0 ){
+        return{ErrRedis:'Couldn\'t Delete Data From Redis' } 
+    }else{
+        console.log(chalk.green(`[${config.logBucket}]`),'Data Delete From Redis...')
+        console.log(chalk.bold('-------------------------------------------------------------'))
+        return {ErrRedis:null}
+    }
 }
 module.exports = async (client,deferred)=>{
     let config = {
         collectionName:"pageViews",
-        logBucket: "pageViews"
+        logBucket: "pageViews",
     }
-    let midContain = await DataPrepare(client,deferred,config)
-    let modelContainer = await StorePrepare(midContain,client,deferred,config)
+    let {midContain,delKeys} = await DataPrepare(client,deferred,config)
+    let modelContainer = await StorePrepare(midContain,deferred,config)
     Promise.all(modelContainer.map(el => el.save()))
-    .then(()=>{
+    .then(async()=>{
         console.log(chalk.green(`[${config.logBucket}]`), 'Saved Data To Database...')
-        console.log(chalk.bold('-------------------------------------------------------------'))
-        // await deleteDataFromRedis(client,deferred,config)
+        let {ErrRedis}=await deleteDataFromRedis(client,delKeys,deferred,config)
+        if(ErrRedis){
+            console.log(chalk.red(`[${config.logBucket}][Redis]`),ErrRedis)
+            console.log(chalk.bold('-------------------------------------------------------------'))
+            return config.deferred.resolve(config.client)   
+        }
+        deferred.resolve(client);
     })
     .catch(err=>{
         console.log( chalk.bold.bgRed('Error Ocurred At:'), '[Visitors]', '[pageViewsFunction]' )

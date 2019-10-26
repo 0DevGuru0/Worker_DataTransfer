@@ -1,7 +1,8 @@
 const Q     = require('q');
 const chalk = require('chalk');
 const Users = require("../model/users");
-const storeFunction = require('./utils/storeFunc')
+const asyncRedis      = require('async-redis');
+const storeFunction = require('./utils/storeFunc');
 Users.on("index", err => {
   err 
     ?console.error(chalk.black.bold.bgYellow('[ Users_MongoDB ]'),"Users index error: %s", err) 
@@ -9,32 +10,51 @@ Users.on("index", err => {
 });
 
 const container = {
-  onlineUsersList: redis=> {
+  onlineUsersList: client=> {
     var deferred = Q.defer();
-    storeFunction(redis,deferred,'online:users:TList','onlineUsersList','onlineCount')
+    let config = {
+      client, deferred,
+      redisBucket:'online:users:TList',
+      logBucket:'onlineUsersList',
+      collectionName:'onlineCount'
+    }
+    storeFunction(config)
     return deferred.promise;
   },
-  totalUsersVerified: redis=> { 
+  totalUsersVerified: client=> {
     var deferred = Q.defer();
-    storeFunction(redis,deferred,'total:Verified:UserList','totalUsersVerified','totalVerifiedUsers')
+    let config = {
+      client, deferred,
+      redisBucket:'total:Verified:UserList',
+      logBucket:'totalUsersVerified',
+      collectionName:'totalVerifiedUsers'
+    } 
+    storeFunction(config)
     return deferred.promise;
   },
-  totalUsersList: redis=> { 
+  totalUsersList: client=> { 
     var deferred = Q.defer();
-    storeFunction(redis,deferred,'total:users:TList','totalUsersList','totalUsers')
+    let config = {
+      client, deferred,
+      redisBucket:'total:users:TList',
+      logBucket:'totalUsersList',
+      collectionName:'totalUsers'
+    }
+    storeFunction(config)
     return deferred.promise;
   }
 };
 
 module.exports = redis => {
   var deferred = Q.defer();
+  const client = asyncRedis.decorate(redis);
   console.log(chalk.bold('-------------------------------------------------------------'))
-  container.onlineUsersList(redis)
+  container.onlineUsersList(client)
     .then(container.totalUsersList)
     .then(container.totalUsersVerified)
     .then(()=>{
       console.log(chalk.bold.bgGreen.black('Congratulation!!! Users Data Transferring to MongoDB is successfully done..'))
-      deferred.resolve(redis)
+      deferred.resolve(client)
     })
     .catch(reason=>console.log( chalk.green("[DataTransfer]"), chalk.white.bgRed("[ERROR]") ,reason))
   return deferred.promise;

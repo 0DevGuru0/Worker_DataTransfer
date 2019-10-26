@@ -1,12 +1,10 @@
-const asyncRedis = require('async-redis')
-const moment = require('moment')
-let _ = require('lodash')
-
-let MainState   = require('../../model/visitors/visitorsState')
-let MonthState  = require('../../model/visitors/monthsVisitorsState');
-let DayState    = require('../../model/visitors/daysDetailState')
-
-let Visitors = require('../../model/visitors')
+const moment    = require('moment')
+    _           = require('lodash'),
+    chalk       = require('chalk'),
+    MainState   = require('../../model/visitors/visitorsState'),
+    MonthState  = require('../../model/visitors/monthsVisitorsState'),
+    DayState    = require('../../model/visitors/daysDetailState'),
+    Visitors    = require('../../model/visitors');
 
 // Util Functions
 function cityConverter(cityContainer){
@@ -15,24 +13,17 @@ function cityConverter(cityContainer){
         ,[]
     )
 }
-
 // fetch Data from redis
-
 function FetchData(client,deferred){
     this.client = client
     this.deferred = deferred
+    this.dayStateContainer= (async function iterate(count=0,client){
+        let DayStateContainer = await client.hscan("visitors:state",count,'count',2000)
+        return +DayStateContainer[0] === 0
+            ?DayStateContainer[1].filter((el,index)=>{ if(index%2 === 0) return true })
+            :iterate(+DayStateContainer[0])
+    })(0,this.client) 
     return{
-        fetchCurrentYearData:async(Year)=>{
-            let countryState,cityState;
-            try{
-                countryState = await this.client.hgetall(`visitors:state:country:year:${Year}`)
-                cityState = await this.client.hgetall(`visitors:state:city:year:${Year}`)
-            }catch(error){ 
-                console.log('Error:',error)
-                this.deferred.reject(error)
-            }
-            return{countryState,cityState}
-        },
         fetchCurrentMonthData:async(Year,Month)=>{
             let monthCountryState,monthCityState;
             try{
@@ -44,7 +35,18 @@ function FetchData(client,deferred){
             }
             return{monthCountryState,monthCityState}
         },
-        fetchOtherYearsData:async(Year,Month)=>{
+        fetchYearData:async(Year)=>{
+            let countryState,cityState;
+            try{
+                countryState = await this.client.hgetall(`visitors:state:country:year:${Year}`)
+                cityState = await this.client.hgetall(`visitors:state:city:year:${Year}`)
+            }catch(error){ 
+                console.log('Error:',error)
+                this.deferred.reject(error)
+            }
+            return{countryState,cityState}
+        },
+        fetchOtherMonthsData:async(Year,Month)=>{
             let monthCountryState,monthCityState;
             try{
                  monthCountryState = await this.client.hgetall(`visitors:state:country:month:${Year}:${Month}`)
@@ -64,52 +66,74 @@ function FetchData(client,deferred){
                 this.deferred.reject(error)  
             }
             return visitorsDailyState
+        },
+        deleteMonthData:async(Year,Month)=>{
+            try{
+                //TODO: TEST
+                console.log('DELETE:::',`visitors:state:city:month:${Year}:${Month}`)
+                console.log('DELETE:::',`visitors:state:country:month:${Year}:${Month}`)
+                // await this.client.del(`visitors:state:city:month:${Year}:${Month}`)
+                // await this.client.del(`visitors:state:country:month:${Year}:${Month}`)
+            }catch(err){ this.deferred.reject(err) }
+        },
+        deleteYearData:async(Year)=>{
+            try{
+                //TODO: TEST
+                console.log('DELETE:::',`visitors:state:city:year:${Year}`)
+                console.log('DELETE:::',`visitors:state:country:year:${Year}`)
+                // await this.client.del(`visitors:state:city:year:${Year}`)
+                // await this.client.del(`visitors:state:country:year:${Year}`)
+            }catch(err){ this.deferred.reject(err) }
+        },
+        deleteDaysData:async (Year,Month)=>{
+            let dayState =await  this.dayStateContainer 
+            let keys = dayState.filter(el=>{
+                let regex = new RegExp(Year+'\/'+Month+'\/\\d{1,2}','g')
+                if(el.match(regex)) return true 
+            })
+            //TODO: TEST
+            if(keys.length) console.log('DELETE:::',"visitors:state",keys)
+            // if(keys.length) await this.client.hdel("visitors:state",...keys)
         }
     }
 }
 // master Function
-async function masterFunc(client, deferred,fetchData){
+async function masterFunc(fetchData){
     let checkCount = 5
     let container = []
-
     for (let i = 0; i < checkCount; i++) {
         let Year = +moment().subtract(i, 'year').format("YYYY")
-        let {countryState,cityState} = await fetchData.fetchCurrentYearData(client,Year,deferred)
-        if (!countryState && !cityState) { continue; }
+        let {countryState,cityState} = await fetchData.fetchYearData(Year)
+        if (!countryState || !cityState) { continue; }
         _.forIn(countryState,(value,key)=> countryState[key]=+value )
         cityState = cityConverter(cityState)
-        
         const mainState = new MainState({ Year,CountryState:countryState,CityState:cityState })
-        
-
-        //TODO: Testing Purpose
+        //TODO: TEST
         let {monthState,dayModelCollection,visitorModel} = Year === +moment().format("YYYY")
-            ?   await CurrentYear(client,Year,+moment().format("MM"),deferred,mainState,fetchData)
-            :   await OtherYears(client,Year,12,deferred,fetchData);
-        
+            ?   await CurrentYear(Year,+moment().format("MM"),fetchData)
+            :   await OtherYears(Year,12,fetchData);
+        // // (Year === moment().format("YYYY"))
+        // //     ?   await Sample2(client,visitorsState,Year,moment().subtract(1,'month').format("MM"))
+        // //     :   await Sample(client,visitorsState,Year,12);
         monthState = new MonthState(monthState)
         monthState.DaysDetail = dayModelCollection
         mainState.MonthsDetail = monthState
         visitorModel.VisitorsState = monthState
         container.push(mainState,...dayModelCollection,monthState,visitorModel)
-        // // (Year === moment().format("YYYY"))
-        // //     ?   await Sample2(client,visitorsState,Year,moment().subtract(1,'month').format("MM"))
-        // //     :   await Sample(client,visitorsState,Year,12);
     }
     return container
 }
-
 // subset Functions
-async function CurrentYear(client,Year,month,deferred,fetchData){
+async function CurrentYear(Year,month,fetchData){
     for(let Month=month;Month>0;Month--){
-        let {monthCountryState,monthCityState} = await fetchData.fetchCurrentMonthData(client,Year,Month,deferred)
-        if (!monthCountryState && !monthCityState) { continue; }
+        let {monthCountryState,monthCityState} = await fetchData.fetchCurrentMonthData(Year,Month)
+        if (!monthCountryState || !monthCityState) { continue; }    
         _.forIn(monthCountryState,(value,key)=> monthCountryState[key]= +value )
         const monthState = { Year,Month,CountryState:monthCountryState,CityState:cityConverter(monthCityState) }
         let visitor = await Visitors.findOne({ Year,Month })
         let visitorModel = visitor ? visitor : new Visitors({ Year, Month })
         let iterateCount = +moment(`${Year}/${Month}`, "YYYY/MM").daysInMonth()
-        let visitorsDailyState = await fetchData.fetchDaysData(client,deferred) 
+        let visitorsDailyState = await fetchData.fetchDaysData() 
         let dayModelCollection = []
         for (let Day = 1; Day <= iterateCount; Day++) {
             let Dat = `${Year}/${Month}/${Day}`
@@ -128,15 +152,15 @@ async function CurrentYear(client,Year,month,deferred,fetchData){
         return {monthState,dayModelCollection,visitorModel}
     }
 }
-async function OtherYears(client,Year,checkCount,deferred,fetchData){
+async function OtherYears(Year,checkCount,fetchData){
     for (let Month = 1; Month <= checkCount; Month++) {
-        let {monthCountryState,monthCityState} = await fetchData.fetchOtherYearsData(client,Year,Month,deferred)
-        if (!monthCountryState && !monthCityState) { continue; }
+        let {monthCountryState,monthCityState} = await fetchData.fetchOtherMonthsData(Year,Month)
+        if (!monthCountryState || !monthCityState) { continue; }
         _.forIn(monthCountryState,(value,key)=> monthCountryState[key]= +value )
         const monthState = { Year,Month,CountryState:monthCountryState,CityState:cityConverter(monthCityState) }
         let visitor = await Visitors.findOne({ Year,Month })
         let visitorModel = visitor ? visitor : new Visitors({ Year, Month })
-        let visitorsDailyState = await fetchData.fetchDaysData(client,deferred)
+        let visitorsDailyState = await fetchData.fetchDaysData()
         let iterateCount = moment(`${Year}/${Month}`, "YYYY/MM").daysInMonth()
         let dayModelCollection = []
         for (let Day = 1; Day <= iterateCount; Day++) {
@@ -156,13 +180,49 @@ async function OtherYears(client,Year,checkCount,deferred,fetchData){
         return {monthState,dayModelCollection,visitorModel}
     }
 }
+async function deleteDataFromRedis(fetchData){
+    this.checkCount = 5
+    this.deleteCurrentYear = async (Year)=>{
+        // Delete All Months Except Current Month
+        let currentMonth = +moment().format('MM')
+        for(let Month=1;Month<currentMonth;Month++){
+            await fetchData.deleteMonthData(Year,Month)
+            await fetchData.deleteDaysData(Year,Month)
+        }
+    }
 
+    this.deleteOtherYears = async (Year)=>{
+        // Delete other Years all Months
+        for(let Month=1;Month<=12;Month++){
+            await fetchData.deleteMonthData(Year,Month)
+            await fetchData.deleteYearData(Year,Month)
+            await fetchData.deleteDaysData(Year,Month)
+        }
+
+    };
+    for (let i = 0; i < this.checkCount; i++) {
+        let Year = +moment().subtract(i, 'year').format("YYYY")
+        let {countryState,cityState} = await fetchData.fetchYearData(Year)
+        if (!countryState || !cityState) { continue; }
+        Year === +moment().format("YYYY") ?deleteCurrentYear(Year) :deleteOtherYears(Year);
+    }
+}
 module.exports = async (client, deferred) => {
+    let config = { logBucket: "visitorsState" }
     const fetchData = new FetchData(client,deferred)
-    let container = await masterFunc(client,deferred,fetchData)
+    let container = await masterFunc(fetchData)
+    if(container.length === 0){
+        console.log(chalk.red(`[${config.logBucket}][Redis]`),'There Is An Error In Fetching YearData Data From Redis')
+        console.log(chalk.bold('-------------------------------------------------------------'))
+        return deferred.resolve(client)   
+    }
+    console.log(chalk.green(`[${config.logBucket}]`), 'Saving Data To Database...')
     Promise.all(container.map(el=>el.save()))
         .then(async ()=>{
-            console.log('Data has been saved Successfully...')
-            await deferred.resolve(client)
+            console.log(chalk.green(`[${config.logBucket}]`), 'Saved Data To Database...')
+            await deleteDataFromRedis(fetchData)
+            console.log(chalk.green(`[${config.logBucket}]`), 'Data Delete From Redis...')
+            console.log(chalk.bold('-------------------------------------------------------------'))
+            deferred.resolve(client)
         }).catch(err=>deferred.reject(err))
 }

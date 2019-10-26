@@ -26,7 +26,7 @@ function RedisDB(){
             chalk.white.bold.bgMagentaBright('[ Redis ]'),
             "connection established successfully"
         ); 
-        deferred.resolve(redis)
+    deferred.resolve(redis)
     })
     // const redisListener = redis.duplicate().setMaxListeners(0);
     return deferred.promise;
@@ -71,7 +71,7 @@ function MongoDB(redis){
 // })
 function DBTransfer(redis){
     var deferred = Q.defer();
-    let transferPeriod = 15*1000
+    let transferPeriod = 30*1000
     // *Data Transferring with use of Time
     console.log(
         chalk.black.bold.bgYellow('[ Data Transfer ]'),
@@ -86,27 +86,19 @@ function DBTransfer(redis){
     setInterval(()=>{
         console.log(chalk.bold('-------------------------------------------------------------'))
         console.log(chalk.black.bold.bgYellow('[ Data Transfer ]'),'Start To Transfer...')
-        // usersWorker(redis)
-        // .then(visitorsWorker)
-        visitorsWorker(redis)
-        // .then(()=>{
-        //     console.log(
-        //         chalk.black.bold.bgYellow('[ Data Transfer ]'),
-        //         'Transferd Successfully At::',moment().format("dddd, MMMM Do YYYY, h:mm:ss a") ) 
-        //     process.exit(0) 
-        // })
         // visitorsWorker(redis)
+        usersWorker(redis)
+        .then(visitorsWorker)
         .then(()=>{
             console.log(
                 chalk.black.bold.bgYellow('[ Data Transfer ]'),
-                'Transferd Successfully At::',moment().format("dddd, MMMM Do YYYY, h:mm:ss a") ) 
+                'Transferred Successfully At::',moment().format("dddd, MMMM Do YYYY, h:mm:ss a") ) 
             process.exit(0) 
         })
         .catch((err)=>{
             console.log(
                 chalk.black.bold.bgRed('[ Data Transfer ]'),
-                // 'Error At::',moment().format("dddd, MMMM Do YYYY, h:mm:ss a"),err ) 
-                err)
+                'Error At::',moment().format("dddd, MMMM Do YYYY, h:mm:ss a"),err ) 
             process.exit(0) 
         })
     },transferPeriod)

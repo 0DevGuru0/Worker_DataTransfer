@@ -1,14 +1,12 @@
-const Q     = require('q'),
-    chalk = require('chalk'),
-    storeFunc = require('./utils/storeOnlinevisitor'),
-    pageViewsStore = require('./utils/pageViewsFunc'),
-    visitorsState = require('./utils/visitorsStateFunc'),
-    asyncRedis = require('async-redis');
-
+const Q             = require('q'),
+    chalk           = require('chalk'),
+    storeFunc       = require('./utils/storeOnlineVisitor'),
+    pageViewsStore  = require('./utils/pageViewsFunc'),
+    visitorsState   = require('./utils/visitorsStateFunc');
 const container = {
-    onlineVisitorsList : redis=>{
+    onlineVisitorsList : client=>{
         var deferred = Q.defer();
-        storeFunc( redis,deferred )
+        storeFunc( client,deferred )
         return deferred.promise;
     },
     pageViews          : client=>{
@@ -23,13 +21,12 @@ const container = {
     }
 }
 
-module.exports = async redis=>{
+module.exports = async client=>{
     console.log(chalk.bold('-------------------------------------------------------------'))
     var deferred = Q.defer();
-    const client = asyncRedis.decorate(redis);
-    container.pageViews(client)
-        .then(container.onlineVisitorsList)
+    container.onlineVisitorsList(client)
         .then(container.visitorsState)
+        .then(container.pageViews)
         .then(()=>{
             console.log(chalk.bold.bgGreen.black('Congratulation!!! Visitors Data Transferring to MongoDB is successfully done..'))
             console.log(chalk.bold('-------------------------------------------------------------'))
