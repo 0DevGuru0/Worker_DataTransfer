@@ -21,17 +21,20 @@ const container = {
     }
 }
 
-module.exports = async client=>{
-    console.log(chalk.bold('-------------------------------------------------------------'))
-    var deferred = Q.defer();
-    container.onlineVisitorsList(client)
-        .then(container.visitorsState)
-        .then(container.pageViews)
-        .then(()=>{
-            console.log(chalk.bold.bgGreen.black('Congratulation!!! Visitors Data Transferring to MongoDB is successfully done..'))
-            console.log(chalk.bold('-------------------------------------------------------------'))
-            deferred.resolve()
-        })
-        .catch(reason=>deferred.reject(reason))
-    return deferred.promise;
+module.exports = {
+    visitorsCont:container,
+    visitorsWorker:client=>{
+        console.log(chalk.bold('-------------------------------------------------------------'))
+        var deferred = Q.defer();
+        container.onlineVisitorsList(client)
+            .then(container.visitorsState)
+            .then(container.pageViews)
+            .then(()=>{
+                console.log(chalk.bold.bgGreen.black('Congratulation!!! Visitors Data Transferring to MongoDB is successfully done..'))
+                console.log(chalk.bold('-------------------------------------------------------------'))
+                deferred.resolve()
+            })
+            .catch(reason=>deferred.reject(reason))
+        return deferred.promise;
+    }
 }

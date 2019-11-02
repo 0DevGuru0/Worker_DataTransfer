@@ -2,10 +2,12 @@
 const moment = require('moment');
 const chalk = require('chalk');
 const Q     = require('q');
+const asyncRedis      = require('async-redis');
 require('dotenv').config()
+
 // Container
-const visitorsWorker = require('../containers/visitors');
-const usersWorker    = require('../containers/users');
+const {visitorsWorker} = require('../containers/visitors');
+const {usersWorker}    = require('../containers/users');
 //Redis
 const Redis = require('redis')
 function RedisDB(){
@@ -43,14 +45,14 @@ function MongoDB(redis){
     });
     mongoose.connection.on('connected', () => { 
         console.log(chalk.black.bold.bgCyan('[ MongoDB ]'),"connection established successfully") 
-        deferred.resolve(redis)
+        deferred.resolve({redis,mongoose})
     });
     mongoose.connection.on('error', (err) => { 
         console.log(chalk.black.bold.bgCyan('[ MongoDB ]'),'connection failed ' + err) 
         deferred.reject(new Error(err.message))
     });
     mongoose.connection.on('disconnected', () => { 
-        console.log(chalk.black.bold.bgCyan('[ MongoDB ]'),'connection closed') 
+        console.log(chalk.black.bold.bgCyan('[ MongoDB ]'),'connection closed successfully') 
         deferred.reject(new Error('connection closed'))
     })
     mongoose.set('useCreateIndex', true);
@@ -58,7 +60,7 @@ function MongoDB(redis){
     // mongoose.set('debug', true);  
     return deferred.promise;
 }
-// *Data Transferring With Use Of Redis Key Notification
+// *__Data Transferring With Use Of Redis Key Notification
 // redisListener.on('ready',()=>{ redisListener.config('SET',"notify-keyspace-events","Eh$s") })
 // PubSub.subscribe("__keyevent@0__:sadd")
 // PubSub.subscribe("__keyevent@0__:incrby")
@@ -69,9 +71,12 @@ function MongoDB(redis){
 //     visitorsWorker(channel,message,redis)
 //     usersWorker(channel,message,redis)
 // })
+
 function DBTransfer(redis){
-    var deferred = Q.defer();
-    let transferPeriod = 30*1000
+    const client = asyncRedis.decorate(redis);
+    let deferred = Q.defer();
+    let transferPeriod = 10*1000
+
     // *Data Transferring with use of Time
     console.log(
         chalk.black.bold.bgYellow('[ Data Transfer ]'),
@@ -83,17 +88,16 @@ function DBTransfer(redis){
         chalk.black.bold.bgYellow('[ Data Transfer ]'),
         'Transferring Data from Redis to MongoDB Each::',
         transferPeriod/3600000,"hour.")
-    setInterval(()=>{
+    let interval=setInterval(()=>{
         console.log(chalk.bold('-------------------------------------------------------------'))
         console.log(chalk.black.bold.bgYellow('[ Data Transfer ]'),'Start To Transfer...')
-        // visitorsWorker(redis)
-        usersWorker(redis)
-        .then(visitorsWorker)
+        // usersWorker(client)
+        usersWorker(client)
+        // .then(visitorsWorker)
         .then(()=>{
             console.log(
                 chalk.black.bold.bgYellow('[ Data Transfer ]'),
                 'Transferred Successfully At::',moment().format("dddd, MMMM Do YYYY, h:mm:ss a") ) 
-            process.exit(0) 
         })
         .catch((err)=>{
             console.log(
@@ -102,7 +106,7 @@ function DBTransfer(redis){
             process.exit(0) 
         })
     },transferPeriod)
-    deferred.resolve()
+    deferred.resolve(interval)
     return deferred.promise;
 }
 module.exports = {DBTransfer,MongoDB,RedisDB}

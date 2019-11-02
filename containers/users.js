@@ -1,7 +1,6 @@
 const Q     = require('q');
 const chalk = require('chalk');
 const Users = require("../model/users");
-const asyncRedis      = require('async-redis');
 const storeFunction = require('./utils/storeFunc');
 Users.on("index", err => {
   err 
@@ -45,22 +44,23 @@ const container = {
   }
 };
 
-module.exports = redis => {
-  var deferred = Q.defer();
-  const client = asyncRedis.decorate(redis);
-  console.log(chalk.bold('-------------------------------------------------------------'))
-  container.onlineUsersList(client)
-    .then(container.totalUsersList)
-    .then(container.totalUsersVerified)
-    .then(()=>{
-      console.log(chalk.bold.bgGreen.black('Congratulation!!! Users Data Transferring to MongoDB is successfully done..'))
-      deferred.resolve(client)
-    })
-    .catch(reason=>console.log( chalk.green("[DataTransfer]"), chalk.white.bgRed("[ERROR]") ,reason))
-  return deferred.promise;
-};
 
-
+module.exports = {
+  usersCont:container,
+  usersWorker:client => {
+    var deferred = Q.defer();
+    console.log(chalk.bold('-------------------------------------------------------------'))
+    let main = container.onlineUsersList(client)
+      let main1 = main.then(container.totalUsersList)
+      main1.then(container.totalUsersVerified)
+      .then(()=>{
+        console.log(chalk.bold.bgGreen.black('Congratulation!!! Users Data Transferring to MongoDB is successfully done..'))
+        deferred.resolve(client)
+      })
+      .catch(reason=>console.log( chalk.green("[DataTransfer]"), chalk.white.bgRed("[ERROR]") ,reason))
+    return deferred.promise;
+  }
+}
 
 // switch (message) {
   //     case 'online:users:TList':
