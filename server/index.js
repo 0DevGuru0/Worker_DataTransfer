@@ -6,8 +6,8 @@ const asyncRedis      = require('async-redis');
 require('dotenv').config()
 
 // Container
-const {visitorsWorker} = require('../containers/visitors');
-const {usersWorker}    = require('../containers/users');
+const {visitorsWorker,visitorsCont} = require('../containers/visitors');
+const {usersWorker,usersCont}    = require('../containers/users');
 //Redis
 const Redis = require('redis')
 function RedisDB(){
@@ -25,7 +25,7 @@ function RedisDB(){
     }).setMaxListeners(0);
     redis.on("connect",()=>{ 
         console.log(
-            chalk.white.bold.bgMagentaBright('[ Redis ]'),
+            chalk.black.bold.bgMagentaBright('[ Redis ]'),
             "connection established successfully"
         ); 
     deferred.resolve(redis)
@@ -41,11 +41,14 @@ function MongoDB(redis){
         useNewUrlParser: true,
         useFindAndModify:false,
         useUnifiedTopology: true,
+        useCreateIndex:true
         // autoIndex: true,
     });
     mongoose.connection.on('connected', () => { 
-        console.log(chalk.black.bold.bgCyan('[ MongoDB ]'),"connection established successfully") 
-        deferred.resolve({redis,mongoose})
+        console.log(chalk.black.bold.bgCyan('[ MongoDB ]'),"connection established successfully")
+        mongoose.connection.db.stats((err, stats)=>{
+            deferred.resolve({redis,mongoose,stats})
+        });
     });
     mongoose.connection.on('error', (err) => { 
         console.log(chalk.black.bold.bgCyan('[ MongoDB ]'),'connection failed ' + err) 
@@ -55,7 +58,7 @@ function MongoDB(redis){
         console.log(chalk.black.bold.bgCyan('[ MongoDB ]'),'connection closed successfully') 
         deferred.reject(new Error('connection closed'))
     })
-    mongoose.set('useCreateIndex', true);
+  
     mongoose.Promise = global.Promise;
     // mongoose.set('debug', true);  
     return deferred.promise;
@@ -71,41 +74,54 @@ function MongoDB(redis){
 //     visitorsWorker(channel,message,redis)
 //     usersWorker(channel,message,redis)
 // })
-
-function DBTransfer(redis){
+// start transfer auto --all
+function DBTransfer({redis,intervalTime}){
     const client = asyncRedis.decorate(redis);
     let deferred = Q.defer();
-    let transferPeriod = 10*1000
-
+    intervalTime = intervalTime.replace('hour','')
+    intervalTime = +intervalTime*1000*60*60
+    intervalTime = 20*1000
     // *Data Transferring with use of Time
     console.log(
         chalk.black.bold.bgYellow('[ Data Transfer ]'),
         'System Initialized...')
     console.log(
         chalk.black.bold.bgYellow('[ Data Transfer ]'),
-        'Started Time::',moment().format("dddd, MMMM Do YYYY, h:mm:ss a"))
+        'Started Time::',moment().format("dddd, MMMM Do YYYY, h:mm a"))
     console.log(
         chalk.black.bold.bgYellow('[ Data Transfer ]'),
         'Transferring Data from Redis to MongoDB Each::',
-        transferPeriod/3600000,"hour.")
+        intervalTime/3600000,"hour.")
+
     let interval=setInterval(()=>{
         console.log(chalk.bold('-------------------------------------------------------------'))
         console.log(chalk.black.bold.bgYellow('[ Data Transfer ]'),'Start To Transfer...')
-        // usersWorker(client)
         usersWorker(client)
-        // .then(visitorsWorker)
-        .then(()=>{
+        .then(visitorsWorker)
+        .then(async client=>{
+            let time = moment().format("dddd, MMMM Do YYYY, h:mm a")
             console.log(
                 chalk.black.bold.bgYellow('[ Data Transfer ]'),
-                'Transferred Successfully At::',moment().format("dddd, MMMM Do YYYY, h:mm:ss a") ) 
+                'Transferred Successfully At::',time ) 
+            let buckets =Object.keys(Object.assign({},usersCont,visitorsCont))
+            let reply;
+            try{ reply = await client.hget('transferStatics','auto') }
+            catch(e){ console.log(e) }
+            reply = reply ? JSON.parse(reply): {};
+            reply[time] = buckets
+            await client.hset('transferStatics','auto',JSON.stringify(reply))
         })
-        .catch((err)=>{
-            console.log(
-                chalk.black.bold.bgRed('[ Data Transfer ]'),
-                'Error At::',moment().format("dddd, MMMM Do YYYY, h:mm:ss a"),err ) 
+        .catch(async err=>{
+            console.log(chalk.black.bold.bgRed('[ Data Transfer ]'), 'Error At::',time,err ) 
+            let reply;
+            try{ reply = await client.hget('transferStatics','auto') }
+            catch(e){ console.log(e) }
+            reply = reply ? JSON.parse(reply): {};
+            reply[time] = 'fail'
+            await client.hset('transferStatics','auto',JSON.stringify(reply))
             process.exit(0) 
         })
-    },transferPeriod)
+    },intervalTime)
     deferred.resolve(interval)
     return deferred.promise;
 }

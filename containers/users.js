@@ -2,11 +2,11 @@ const Q     = require('q');
 const chalk = require('chalk');
 const Users = require("../model/users");
 const storeFunction = require('./utils/storeFunc');
-Users.on("index", err => {
-  err 
-    ?console.error(chalk.black.bold.bgYellow('[ Users_MongoDB ]'),"Users index error: %s", err) 
-    :console.info(chalk.black.bold.bgYellow('[ Users_MongoDB ]'),"Users indexing complete");
-});
+// Users.on("index", err => {
+//   err 
+//     ?console.error(chalk.black.bold.bgYellow('[ Users_MongoDB ]'),"Users index error: %s", err) 
+//     :console.info(chalk.black.bold.bgYellow('[ Users_MongoDB ]'),"Users indexing complete");
+// });
 
 const container = {
   onlineUsersList: client=> {
@@ -54,7 +54,7 @@ module.exports = {
       let main1 = main.then(container.totalUsersList)
       main1.then(container.totalUsersVerified)
       .then(()=>{
-        console.log(chalk.bold.bgGreen.black('Congratulation!!! Users Data Transferring to MongoDB is successfully done..'))
+        console.log(chalk.bold.bgGreen.white('Congratulation!!! Users Data Transferring to MongoDB is successfully done..'))
         deferred.resolve(client)
       })
       .catch(reason=>console.log( chalk.green("[DataTransfer]"), chalk.white.bgRed("[ERROR]") ,reason))

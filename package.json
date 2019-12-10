@@ -24,18 +24,25 @@
   },
   "homepage": "https://github.com/afsan007/worker_DataTransfer#readme",
   "dependencies": {
+    "ansi-escapes": "^4.2.1",
     "async-redis": "^1.1.7",
     "chalk": "^2.4.2",
+    "cli-width": "^2.2.0",
     "clui": "^0.3.6",
     "dotenv": "^8.1.0",
     "emoji": "^0.3.2",
     "extends-classes": "^1.0.5",
+    "external-editor": "^3.1.0",
     "figlet": "^1.2.4",
+    "figures": "^3.1.0",
     "inquirer": "^7.0.0",
     "lodash": "^4.17.15",
     "moment": "^2.24.0",
     "mongoose": "^5.7.1",
+    "node-key-sender": "^1.0.11",
     "q": "^1.5.1",
-    "redis": "^2.8.0"
+    "redis": "^2.8.0",
+    "sigint": "^1.0.0",
+    "ttys": "0.0.3"
   }
 }

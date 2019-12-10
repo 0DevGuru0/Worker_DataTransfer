@@ -3,14 +3,14 @@ const Q = require('q')
 const {DBTransfer,MongoDB,RedisDB} = require('../../index')
 let mainInterval,mongooseDB,redisDB;
 module.exports={
-    start:()=>{
+    start:(intervalTime)=>{
         return RedisDB()
         .then(MongoDB)
         .then(({redis,mongoose})=>{
             let deferred = Q.defer();
             mongooseDB = mongoose;
             redisDB = redis;
-            deferred.resolve(redis)
+            deferred.resolve({intervalTime,redis,bucket:'all'})
             return deferred.promise
         })
         .then(DBTransfer)
@@ -27,6 +27,7 @@ module.exports={
                     chalk.white.bold.bgMagentaBright('[ Redis ]'),
                     "connection closed successfully"
                 );
+                mainInterval = false
                 deferred.resolve()
             })
         })

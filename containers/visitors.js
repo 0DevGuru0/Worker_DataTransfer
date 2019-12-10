@@ -29,10 +29,10 @@ module.exports = {
         container.onlineVisitorsList(client)
             .then(container.visitorsState)
             .then(container.pageViews)
-            .then(()=>{
+            .then(client=>{
                 console.log(chalk.bold.bgGreen.black('Congratulation!!! Visitors Data Transferring to MongoDB is successfully done..'))
                 console.log(chalk.bold('-------------------------------------------------------------'))
-                deferred.resolve()
+                deferred.resolve(client)
             })
             .catch(reason=>deferred.reject(reason))
         return deferred.promise;

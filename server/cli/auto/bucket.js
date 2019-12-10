@@ -15,30 +15,31 @@ module.exports=()=>{
            let DBTransfer = (redis)=>{
                 let client      = asyncRedis.decorate(redis);
                 let deferred    = Q.defer();
-                let allVisi     = bucket.indexOf('all_visitors_bucket')
+                let allVisi     = bucket.indexOf('all_visitor_buckets')
                 if(allVisi>-1)  bucket.splice(allVisi,1,...this.allVisi)
-                let allUsers    = bucket.indexOf('all_users_bucket')
+                let allUsers    = bucket.indexOf('all_user_buckets')
                 if(allUsers>-1) bucket.splice(allUsers,1,...this.allUsers)
                 bucket = _.uniq(bucket)
-
+                this.staticsBucket = bucket.join(":")
                 let firstBucket = bucket.shift()
                 let Arr = []
                 transferPeriod = transferPeriod.replace('hour','')
                 transferPeriod = +transferPeriod*1000*60*60
                 console.log( 
-                    clc.bgYellow('[ Data Transfer ]'), 
+                    clc.black.bold.bgYellow('[ Data Transfer ]'), 
                     'System Initialized...'); 
                 console.log( 
-                    clc.bgYellow('[ Data Transfer ]'), 
+                    clc.black.bold.bgYellow('[ Data Transfer ]'), 
                     'Started Time::',
                     moment().format("dddd, MMMM Do YYYY, h:mm:ss a")) 
                 console.log( 
-                    clc.bgYellow('[ Data Transfer ]'), 
+                    clc.black.bold.bgYellow('[ Data Transfer ]'), 
                     'Transferring Data from Redis to MongoDB Each::',
                     transferPeriod/3600000,"hour.")
                 this.interval=setInterval(()=>{
+                    let time = moment().format("dddd, MMMM Do YYYY, h:mm a")
                     console.log(clc('-------------------------------------------------------------'))
-                    console.log(clc.bgYellow('[ Data Transfer ]'),'Start To Transfer...')
+                    console.log(clc.black.bold.bgYellow('[ Data Transfer ]'),'Start To Transfer...')
                     Arr.push(this.buckets[firstBucket](client))
                     _.forEach(bucket,elem=>{
                         let arrLength = Arr.length - 1
@@ -46,14 +47,29 @@ module.exports=()=>{
                         Arr.push(Arr[arrLength].then(currentBucket))
                         Arr.shift()
                     })
-                    Arr[0].then(()=>console.log(
-                        clc.bold.bgGreen.black(' Congratulation!!! Users Data Transferring to MongoDB is successfully done..'))
-                    )
-                    .catch(reason=>console.log( 
+                    Arr[0].then(async ()=>{
+                        let reply;
+                        try{ reply = await client.hget('transferStatics','auto') }
+                        catch(e){ console.log(e) }
+                        reply = reply ? JSON.parse(reply): {};
+                        reply[time] = this.staticsBucket.split(':')
+                        await client.hset('transferStatics','auto',JSON.stringify(reply))
+
+                        console.log(
+                        clc.bold.bgGreen.white(' Congratulation!!! Users Data Transferring to MongoDB is successfully done..'))
+                    })
+                    .catch(async reason=>{
+                        let reply;
+                        try{ reply = await client.hget('transferStatics','auto') }
+                        catch(e){ console.log(e) }
+                        reply = reply ? JSON.parse(reply): {};
+                        reply[time] = 'fail'
+                        await client.hset('transferStatics','auto',JSON.stringify(reply))
+                        console.log( 
                         clc.green("[DataTransfer]"),
                         clc.white.bgRed("[ERROR]") ,
                         reason)
-                    )
+                    })
                 },transferPeriod)
                 deferred.resolve()
                 return deferred.promise;
@@ -79,6 +95,7 @@ module.exports=()=>{
                         clc.white.bold.bgMagentaBright('[ Redis ]'),
                         "connection closed successfully"
                     );
+                    this.interval=false
                     deferred.resolve()
                 })
             })
@@ -88,4 +105,4 @@ module.exports=()=>{
 
 }
 
-// start transfer auto --all
+// start transfer auto --bucket
