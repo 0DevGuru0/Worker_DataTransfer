@@ -1,6 +1,6 @@
 const chalk = require('chalk');
 const Q = require('q')
-const {DBTransfer,MongoDB,RedisDB} = require('../../index')
+const {DBTransfer,MongoDB,RedisDB} = require('../../../../../index')
 let mainInterval,mongooseDB,redisDB;
 module.exports={
     start:(intervalTime)=>{

@@ -2,17 +2,16 @@
 const moment = require('moment');
 const chalk = require('chalk');
 const Q     = require('q');
-const asyncRedis      = require('async-redis');
+const asyncRedis = require('async-redis');
 require('dotenv').config()
 
 // Container
 const {visitorsWorker,visitorsCont} = require('../containers/visitors');
-const {usersWorker,usersCont}    = require('../containers/users');
+const {usersWorker,usersCont}       = require('../containers/users');
 //Redis
 const Redis = require('redis')
 function RedisDB(){
     var deferred = Q.defer();
-    // const PubSub = require('./utils/pubsub');
     const redis = Redis.createClient({
         host:process.env.REDIS_HOST,
         port:process.env.REDIS_PORT,
@@ -63,17 +62,7 @@ function MongoDB(redis){
     // mongoose.set('debug', true);  
     return deferred.promise;
 }
-// *__Data Transferring With Use Of Redis Key Notification
-// redisListener.on('ready',()=>{ redisListener.config('SET',"notify-keyspace-events","Eh$s") })
-// PubSub.subscribe("__keyevent@0__:sadd")
-// PubSub.subscribe("__keyevent@0__:incrby")
-// PubSub.subscribe("__keyevent@0__:hincrby")
 
-// console.log('worker has been started...')
-// PubSub.on('message',(channel,message)=>{
-//     visitorsWorker(channel,message,redis)
-//     usersWorker(channel,message,redis)
-// })
 // start transfer auto --all
 function DBTransfer({redis,intervalTime}){
     const client = asyncRedis.decorate(redis);

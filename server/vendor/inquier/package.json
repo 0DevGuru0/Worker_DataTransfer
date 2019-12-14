@@ -1,0 +1,25 @@
+{
+  "name": "withRL",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "ansi-escapes": "^4.3.0",
+    "chalk": "^3.0.0",
+    "cli-cursor": "^3.1.0",
+    "cli-width": "^2.2.0",
+    "figures": "^3.1.0",
+    "lodash": "^4.17.15",
+    "mute-stream": "0.0.8",
+    "run-async": "^2.3.0",
+    "rxjs": "^6.5.3",
+    "string-width": "^4.2.0",
+    "strip-ansi": "^6.0.0"
+  }
+}

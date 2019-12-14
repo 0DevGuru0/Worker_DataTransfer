@@ -2,9 +2,9 @@ const clc = require('chalk');
 const Q = require('q')
 const _ = require('lodash')
 const moment = require('moment')
-const {usersCont} = require('../../../containers/users')
-const {visitorsCont} = require('../../../containers/visitors')
-const {MongoDB,RedisDB} = require('../../index')
+const {usersCont} = require('../../../../../../containers/users')
+const {visitorsCont} = require('../../../../../../containers/visitors')
+const {MongoDB,RedisDB} = require('../../../../../index')
 const asyncRedis = require('async-redis')
 module.exports=()=>{
     this.buckets = Object.assign({},usersCont,visitorsCont)

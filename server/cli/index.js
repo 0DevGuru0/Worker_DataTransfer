@@ -4,9 +4,9 @@ const readline        = require('readline');
     clc               = require('chalk'),
     figlet            = require('figlet'),
     {Spinner}         = require('clui'),
-    auto_all          = require('./auto/all'),
-    auto_bucket       = require('./auto/bucket'),
-    manualTransfer    = require('./manual')
+    auto_all          = require('./components/start/transfer/auto/all'),
+    auto_bucket       = require('./components/start/transfer/auto/bucket'),
+    manualTransfer    = require('./components/start/transfer/manual')
     ask               = require('inquirer'),
     os                = require('os'),
     v8                = require('v8'),
@@ -17,126 +17,14 @@ const readline        = require('readline');
     cliWidth          = require('cli-width'),
     ttys              = require('ttys');
 
-
+const BaseUI = require('./ui/base')
+const StartComponent = require('./components/start')
 let exitAllow = 0
 let transfer= null
 
 
 class _EventsEmitter extends events{}
-class CliComponents {
-    constructor(){
-        this.width = cliWidth({ defaultWidth: 80, output: ttys.output })
-        process.stdout.on('resize', () => {
-            this.width = cliWidth({ defaultWidth: 80, output: ttys.output })
-        });
-    }
-    centered(str,width=this.width){
-        if(width>this.width) width=this.width + 15
-        let leftPadding = Math.floor(( width - str.length)/2)
-        let line="";
-        for(let i=0;i<leftPadding;i++){ line+=" " }
-        line+=str
-        console.log(line)
-    }
-    horizontalLine(width=this.width){
-        if(width>this.width) width=this.width 
-        let line="";
-        for(let i=0;i<width;i++){ line+=clc.bold("-") }
-        console.log(line)
-    }
-    verticalSpace(){
-        console.log('\n')
-    }
-}
-// start transfer
-class StartHandler {
-    constructor(){     
-    }
-    autoBucket(){
-        let question = [
-            {
-                type: 'list',
-                name: 'intervalTime',
-                default: '24hour',
-                message: 'From when to when it checks for transferring?',
-                choices: ['24hour', '12hour', '9hour', '6hour', '3hour']
-            },
-            {
-            type: 'checkbox',
-            message: 'Select Buckets for Transfer',
-            name: 'redisBuckets',
-            pageSize:"100",
-            choices: [
-                new ask.Separator(' = Visitors = '),
-                    {name:'all_visitor_buckets'},
-                    {name:'onlineVisitorsList'},
-                    {name:'pageViews'}, 
-                    {name:'visitorsState'}, 
-                new ask.Separator(' = Users = '),
-                    {name:'all_user_buckets'},
-                    {name:'onlineUsersList'},
-                    {name:'totalUsersVerified'},
-                    {name:'totalUsersList'}
-            ],
-            validate: answer=>answer.length<1 ?'You must choose at least one topping.':true
-        }]
-        ask.prompt(question).then(({intervalTime,redisBuckets})=>
-            auto_bucket().start(redisBuckets,intervalTime)
-        )
-    }
-    autoAll(){
-        let question = [{
-            type: 'list',
-            name: 'intervalTime',
-            default: '24hour',
-            message: 'From when to when it checks for transferring?',
-            choices: ['24hour', '12hour', '9hour', '6hour', '3hour']
-        }]
-        ask.prompt(question).then(({intervalTime})=> auto_all.start(intervalTime) )
-    }
-    manual(inter){
-        let question = [
-            {
-            type: 'checkbox',
-            message: 'Select Buckets for Transfer',
-            name: 'redisBuckets',
-            pageSize:"100",
-            choices: [
-                new ask.Separator(' = Visitors = '),
-                    {name:'all_visitor_buckets'},
-                    {name:'onlineVisitorsList'},
-                    {name:'pageViews'}, 
-                    {name:'visitorsState'}, 
-                new ask.Separator(' = Users = '),
-                    {name:'all_user_buckets'},
-                    {name:'onlineUsersList'},
-                    {name:'totalUsersVerified'},
-                    {name:'totalUsersList'}
-            ],
-            validate: answer=>answer.length<1 ?'You must choose at least one topping.':true
-        }]
-        return ask.prompt(question).then(({redisBuckets})=>manualTransfer().start(redisBuckets,inter) )    
-    }
-    master(inter){
-        let qa1Text = clc.bold.green('?') + clc.bold(' Which method would you prefer to transfer data? [ auto / manual ] ')
-        let qa2Text = clc.bold.green('?') + clc.bold(' Which buckets would you prefer to transfer auto? [ all / custom ] ')
-        const qa1 =()=>inter.question(qa1Text,answer=>{
-            if( answer === "manual" || answer === "MANUAL" ) return this.manual(inter)
-            if( answer === "auto" || answer === "auto" ) {
-                return inter.question(qa2Text,answer=>{
-                    if( answer === 'all' || answer === 'ALL' ) return this.autoAll()
-                    if( answer === 'custom' || answer === 'custom' ) return this.autoBucket()
-                    if( answer ) return console.log(`${answer} does not exist in choice list.`)
-                })
-            }
-            if(!answer && transfer) return qa1()
-        })
-
-        return qa1()
-    }
-}
-// status
-class StatusHandler extends CliComponents {
+class StatusHandler extends BaseUI {
     constructor(props){
         super(props)
         this.list = {
@@ -297,11 +185,11 @@ class StatusHandler extends CliComponents {
         })
     }
 };
-class CliInterface extends CliComponents {
+class CliInterface extends BaseUI {
     constructor(props){
         super(props)
         this.e = new _EventsEmitter();
-        this.startCL = new StartHandler();
+        this.startCL = new StartComponent();
         this.statusCl = new StatusHandler(); 
     }
     eventListeners(){
