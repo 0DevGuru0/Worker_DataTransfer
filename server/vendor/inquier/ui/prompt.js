@@ -2,7 +2,7 @@
 
 const _                                = require('lodash'),
     {defer,EMPTY,from,of}              = require('rxjs'),
-    { concatMap,filter,publish,reduce,refCount,tap} = require('rxjs/operators'),
+    { concatMap,filter,publish,reduce,refCount,finalize} = require('rxjs/operators'),
     runAsync                           = require('run-async'),
     utils                              = require('../utils/utils'),
     Base                               = require('../utils/base');

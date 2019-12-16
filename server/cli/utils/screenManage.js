@@ -12,14 +12,13 @@ class ScreenManager {
         this.rl = rl;
     }
     render(content,bottomContent){
-        this.rl.output.unmute();
+        // this.rl.output.unmute();
         this.clean(this.extraLinesUnderPrompt);
 
         let promptLine = lastLine(content);
         let rawPromptLine = stripAnsi(promptLine);
-
         let prompt = rawPromptLine;
-        if(this.rl.line.length) prompt = prompt.slice(0,-this.rl.line.length)
+        // if(this.rl.line.length) prompt = prompt.slice(0,-this.rl.line.length)
         
         this.rl.setPrompt(prompt);
 
@@ -31,7 +30,7 @@ class ScreenManager {
 
         if(rawPromptLine.length % width === 0 ) content += '\n';
         let fullContent = content + (bottomContent ? '\n'+bottomContent : '' );
-        this.rl.output.write(fullContent);
+        process.stdout.write(fullContent);
         
         let promptLineUpDiff = Math.floor( rawPromptLine.length / width ) - cursorPos.rows;
         let bottomContentHeight = promptLineUpDiff + ( bottomContent ? height(bottomContent) : 0 );
@@ -45,7 +44,7 @@ class ScreenManager {
         this.extraLinesUnderPrompt = bottomContentHeight;
         this.height = height(fullContent);
 
-        this.rl.output.mute();
+        // this.rl.output.mute();
     }
     clean(extraLines){
         extraLines>0 
@@ -53,15 +52,15 @@ class ScreenManager {
             : util.clearLine(this.rl,this.height);
     }
     done(){
-        this.rl.setPrompt('>>');
-        this.rl.output.unmute();
-        this.rl.output.write('\n');
+        this.rl.setPrompt('');
+        // this.rl.output.unmute();
+        process.stdout.write('\n');
     }
     releaseCursor(){
         if( this.extraLinesUnderPrompt > 0 ) util.down(this.rl,this.extraLinesUnderPrompt)
     }
     normalizeCliWidth(){
-        return cliWidth({ defaultWidth:80, output:this.rl.output })
+        return cliWidth({ defaultWidth:80, output:process.stdout })
     }
     breakLines(lines,width){
         width = width || this.normalizeCliWidth();

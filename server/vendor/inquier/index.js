@@ -26,6 +26,6 @@ inquirer.createPromptModule = (opt)=>{
  * @return {inquirer.ui.Prompt}
  */
 
-inquirer.prompt = inquirer.createPromptModule();
+inquirer.prompt = (rl,Q,cb)=>inquirer.createPromptModule(rl)(Q).then(cb).finally(()=>rl.prompt());
 
 module.exports = inquirer;

@@ -11,7 +11,7 @@ const _         = require('lodash'),
     Base        = require('./base'),
     observe     = require('../utils/events'),
     Paginator   = require('../utils/paginator'),
-    { flatMap, map, take, takeUntil,tap } = require('rxjs/operators');
+    { flatMap, map, take, takeUntil,finalize } = require('rxjs/operators');
 
 class ListPrompt extends Base {
   constructor(questions, rl, answers) {
@@ -116,9 +116,8 @@ class ListPrompt extends Base {
   onSubmit(value) {
     this.status = 'answered';
 
-    // Rerender prompt
+    // Render prompt
     this.render();
-
     this.screen.done();
     cliCursor.show();
     this.done(value);
