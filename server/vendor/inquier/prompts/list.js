@@ -21,10 +21,6 @@ class ListPrompt extends Base {
     if (!this.opt.choices) {
       this.throwParamError('choices');
     }
-    this.exit = false;
-    this.rl.on('SIGINT',()=>{
-      this.exit = true
-    })
     this.firstRender = true;
     this.selected = 0;
 
@@ -72,10 +68,11 @@ class ListPrompt extends Base {
     events.line
       .pipe(
         take(1),
+        takeUntil( events.exitKey.pipe(takeUntil(events.line),tap(this.onForceClose.bind(this))) ),
         map(this.getCurrentValue.bind(this)),
         mergeMap(value => runAsync(self.opt.filter)(value).catch(err => err))
       )
-      .forEach(this.onSubmit.bind(this));
+      .forEach(this.onSubmit.bind(this));     
     // Init the prompt
     cliCursor.hide();
     this.render();
@@ -87,7 +84,12 @@ class ListPrompt extends Base {
    * Render the prompt to screen
    * @return {ListPrompt} self
    */
-
+  onForceClose(){
+    cliCursor.show();
+    this.screen.done();
+    this.rl.prompt('');
+    this.close();
+  }
   render() {
     // Render question
     var message = this.getQuestion();
@@ -108,7 +110,6 @@ class ListPrompt extends Base {
     }
     
     this.firstRender = false;
-
     this.screen.render(message);
   }
 
