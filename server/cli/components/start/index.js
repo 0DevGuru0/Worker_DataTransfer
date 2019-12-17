@@ -7,7 +7,6 @@ const clc               = require('chalk'),
 const BaseUI = require('../../ui/base');
 let transfer= null
 class StartComponent extends BaseUI {
-
     start(str,rl){
         let container = _.map(str.trim().split(' '),elem=>elem.toLowerCase().trim())
         if( container[1] === '--help' ||container.length===1 ){
@@ -28,8 +27,8 @@ class StartComponent extends BaseUI {
             return this.horizontalLine(74)
         }
         if(container[2] === "auto"){
-            if(container[3].startsWith("--bucket")){ return this.autoBucket() }
-             if(container[3] === "--all"){ return this.autoAll() }
+            if(container[3].startsWith("--bucket")){ return this.autoBucket(rl) }
+             if(container[3] === "--all"){ return this.autoAll(rl) }
         }
         if(container[2] === "manual"){
             return this.manual(rl)
@@ -43,7 +42,7 @@ class StartComponent extends BaseUI {
             clc.bold.black.bgYellow('[ DataTransfer ]'),
             `'${container.join(" ")}' is not a correct command. See 'start --help'.`)
     }
-    autoBucket(){
+    autoBucket(rl){
         let question = [
             {
                 type: 'list',
@@ -70,12 +69,11 @@ class StartComponent extends BaseUI {
                     {name:'totalUsersList'}
             ],
             validate: answer=>answer.length<1 ?'You must choose at least one topping.':true
-        }]
-        ask.prompt(question).then(({intervalTime,redisBuckets})=>
-            auto_bucket().start(redisBuckets,intervalTime)
-        )
+        }];
+        let callback = ({intervalTime,redisBuckets})=> auto_bucket().start(redisBuckets,intervalTime)
+        return ask.prompt(rl,question,callback)
     }
-    autoAll(){
+    autoAll(rl){
         let question = [{
             type: 'list',
             name: 'intervalTime',
@@ -83,9 +81,10 @@ class StartComponent extends BaseUI {
             message: 'From when to when it checks for transferring?',
             choices: ['24hour', '12hour', '9hour', '6hour', '3hour']
         }]
-        ask.prompt(question).then(({intervalTime})=> auto_all.start(intervalTime) )
+        let callback = ({intervalTime})=> auto_all.start(intervalTime) 
+        ask.prompt(rl,question,callback)
     }
-    manual(inter){
+    manual(rl){
         let question = [
             {
             type: 'checkbox',
@@ -106,7 +105,8 @@ class StartComponent extends BaseUI {
             ],
             validate: answer=>answer.length<1 ?'You must choose at least one topping.':true
         }]
-        return ask.prompt(question).then(({redisBuckets})=>manualTransfer().start(redisBuckets,inter) )    
+
+        return ask.prompt(question).then( )    
     }
     master(rl){
         let question = [
@@ -123,24 +123,12 @@ class StartComponent extends BaseUI {
                 choices: ['all','custom']
             }
         ]
-        let callback = answers => {console.log(JSON.stringify(answers, null, '  '))}
-
+        let callback = answers => {
+            console.log(JSON.stringify(answers, null, '  '))
+            // if( answer === 'all' || answer === 'ALL' ) return this.autoAll()
+            // if( answer === 'custom' || answer === 'custom' ) return this.autoBucket()
+        }
         return ask.prompt(rl,question,callback)
-        // let qa1Text = clc.bold.green('?') + clc.bold(' Which method would you prefer to transfer data? [ auto / manual ] ')
-        // let qa2Text = clc.bold.green('?') + clc.bold(' Which buckets would you prefer to transfer auto? [ all / custom ] ')
-        // const qa1 =()=>inter.question(qa1Text,answer=>{
-        //     if( answer === "manual" || answer === "MANUAL" ) return this.manual(inter)
-        //     if( answer === "auto" || answer === "auto" ) {
-        //         return inter.question(qa2Text,answer=>{
-        //             if( answer === 'all' || answer === 'ALL' ) return this.autoAll()
-        //             if( answer === 'custom' || answer === 'custom' ) return this.autoBucket()
-        //             if( answer ) return console.log(`${answer} does not exist in choice list.`)
-        //         })
-        //     }
-        //     if(!answer && transfer) return qa1()
-        // })
-
-        // return qa1()
     }
 }
 

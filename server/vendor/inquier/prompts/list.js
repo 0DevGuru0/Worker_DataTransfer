@@ -11,7 +11,7 @@ const _         = require('lodash'),
     Base        = require('./base'),
     observe     = require('../utils/events'),
     Paginator   = require('../utils/paginator'),
-    {fromEvent} = require('rxjs'),
+    {race} = require('rxjs'),
     { mergeMap, map, take, takeUntil,tap } = require('rxjs/operators');
 
 class ListPrompt extends Base {
@@ -54,15 +54,15 @@ class ListPrompt extends Base {
     var events = observe(this.rl);
 
     events.normalizedUpKey
-      .pipe(takeUntil(events.line))
+      .pipe(takeUntil(race(events.line,events.exitKey)))
       .forEach(this.onUpKey.bind(this));
 
     events.normalizedDownKey
-      .pipe(takeUntil(events.line))
+      .pipe(takeUntil(race(events.line,events.exitKey)))
       .forEach(this.onDownKey.bind(this));
 
     events.numberKey
-      .pipe(takeUntil(events.line))
+      .pipe(takeUntil(race(events.line,events.exitKey)))
       .forEach(this.onNumberKey.bind(this));
 
     events.line

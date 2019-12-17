@@ -1,5 +1,4 @@
 'use strict'
-
 let inquirer = {
     Prompt : require('./ui/prompt'),
     Separator : require('./objects/separator')
@@ -25,7 +24,5 @@ inquirer.createPromptModule = (opt)=>{
  * @param  {Function} cb - Callback being passed the user answers
  * @return {inquirer.ui.Prompt}
  */
-
-inquirer.prompt = (rl,Q,cb)=>inquirer.createPromptModule(rl)(Q).then(cb).finally(()=>rl.prompt());
-
+inquirer.prompt = (rl,Q,cb)=>inquirer.createPromptModule(rl)(Q).then(cb).finally(()=>rl.prompt())
 module.exports = inquirer;

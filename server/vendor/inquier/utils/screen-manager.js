@@ -55,7 +55,7 @@ class ScreenManager {
     done(){
         this.rl.setPrompt('>>');
         this.rl.output.unmute();
-        this.rl.output.write('\n');
+        this.rl.output.write('\r\n');
     }
     releaseCursor(){
         if( this.extraLinesUnderPrompt > 0 ) util.down(this.rl,this.extraLinesUnderPrompt)
