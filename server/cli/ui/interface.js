@@ -16,23 +16,24 @@ const readline        = require('readline');
     cliWidth          = require('cli-width'),
     ttys              = require('ttys');
 const MuteStream    = require('mute-stream');
-const ScreenManage = require('../utils/screenManage')
 const BaseUI = require('./base')
 const StartComponent = require('../components/start')
 const StatusHandler = require('../components/status')
-let exitAllow = 0
+const ManPage = require('./man')
 
 class _EventsEmitter extends events{}
 
 class CliInterface extends BaseUI {
     constructor(props){
         super(props)
+        this.exitAllow = 0
         this.e        = new _EventsEmitter();
         this.startCL  = new StartComponent();
         this.statusCl = new StatusHandler(); 
+        this.manCL    = new ManPage();
     }
     eventListeners(){
-        this.e.on('start',  (str)=>this.startCL.start(str,this.rl));
+        this.e.on('start',  str=>this.startCL.start(str,this.rl))
         this.e.on('status', ()=>this.statusCl.master(this.rl));
         this.e.on('log',    ()=>this.log()); 
         this.e.on('test',   ()=>this.test()); 
@@ -40,9 +41,9 @@ class CliInterface extends BaseUI {
         this.e.on('setting',()=>this.setting());
         this.e.on('exit',   ()=>this.exit());
         this.e.on('stop',   ()=>this.stop());
-        this.e.on('man',    ()=>this.man());
+        this.e.on('man',    ()=>this.manCL.run(this.possibleCommands));
         this.e.on('help',   ()=>this.man());
-        this.e.on('clear',  ()=>this.clear());
+        this.e.on('clear',  ()=>console.clear());
         this.possibleCommands = this.e.eventNames()
     }
     init(){
@@ -59,28 +60,18 @@ class CliInterface extends BaseUI {
                 return [hits.length ? hits : commands, line];
             }  
         })
-        // readline.emitKeypressEvents(process.stdin);
-        // process.stdin.setRawMode(true);
-        // process.stdin.on('keypress', (str, key) =>{ if (!(key.ctrl && key.name === 'c')) exitAllow = 0 });
-        // this.rl.on("SIGINT",()=>process.emit("SIGINT"));
-        // process.on("SIGINT",()=>{
-        //     if(exitAllow<1){
-        //         console.log(clc.red.bold('\r\n(To exit, press ^C again or ^D or type .exit)'))
-        //         this.rl.prompt()
-        //         exitAllow++;
-        //     }else{
-        //         if(transfer){
-        //             transfer=null;
-        //             this.rl.write(null, { ctrl: false, name: 'return' });
-        //             this.rl.prompt()
-        //         }else{
-        //             console.log('\r\n')
-        //             process.exit()
-        //         }
-        //     }
-        // })
+
+        this.rl.on('SIGINT',()=>{
+            if(this.exitAllow<1){
+                console.log(clc.red.bold('\r\n(To exit, press ^C again or ^D)')) 
+                this.rl.prompt()
+            }else{ this.onForceClose() }
+            this.exitAllow++
+        });
+
         this.rl.prompt()
         this.rl.on("line",str=>{
+            if(this.exitAllow===1) this.exitAllow = 0;
             let misType = []
             str = typeof(str) == 'string' && str.trim().length > 0 ?str.trim().toLowerCase() : false;
             let result = commands.some(el=>{
@@ -111,49 +102,13 @@ class CliInterface extends BaseUI {
             this.rl.prompt()
         })
     }
-    man(){
-        let commands = {
-            "man"           :   "Show help Page",
-            "help"          :   "Alias for 'man' command",
-            "status"        :   "Get statistics on the underlying operating system",
-            "start"         :   "Start Manually Transferring functions",
-            "log"           :   "Report underlying transferring",
-            "test"          :   "Start testing engine for system",
-            "health"        :   "check Databases reliability",
-            "setting"       :   "General settings of operating system",
-            "exit"          :   "Kill the CLI (and the rest of the application)",
-            "stop"          :   "Stop Interval from automation transfer"
-        }
-        let lengths=[]
-        let lines = []
-        _.forEach(this.possibleCommands,elem=>{
-            let line    = "☀️  "+clc.bold.yellow(elem)+" "
-            let padding = 40 - line.length;
-            for(let space=0; space<=padding; space++){ line +="-" }
-            commands.hasOwnProperty(elem)
-                ?   line += ' '+commands[elem]
-                :   line += clc.red('Undefined Yet')
-            lengths.push(padding.length)
-            lines.push(line)
-        })
-        //TODO: not measure properly
-        let biggestLength = lengths.sort((a,b)=>b-a)[0]
-        this.horizontalLine(74)
-        this.centered("🧭  CLI Manual 🧭",70)
-        this.horizontalLine(74)
-        _.forEach(lines,el=>console.log(el))
-        this.horizontalLine(74)
-        this.verticalSpace()
-    }
     onForceClose() {
         this.exit();
         process.kill(process.pid, 'SIGINT');
     }
-    clear(){
-        console.clear()
-    }
     exit(){
-        console.log(clc.bgCyan.bold.black('Have Fun...'),'❤️ ❤️ ❤️')
+        this.exitAllow = 0;
+        console.log(clc.bgCyan.bold.white('\r\n  Have Fun...  '),'❤️ ❤️ ❤️')
         this.rl.removeListener('SIGINT', this.onForceClose);
         process.removeListener('exit', this.onForceClose);
         this.rl.pause();

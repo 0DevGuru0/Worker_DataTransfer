@@ -1,8 +1,8 @@
 'use strict'
 
 const _                                = require('lodash'),
-    {defer,EMPTY,from,of}              = require('rxjs'),
-    { concatMap,filter,publish,reduce,refCount,finalize} = require('rxjs/operators'),
+    {defer,EMPTY,from,of,throwError,fromEvent}           = require('rxjs'),
+    { concatMap,filter,publish,reduce,refCount,tap,takeUntil} = require('rxjs/operators'),
     runAsync                           = require('run-async'),
     utils                              = require('../utils/utils'),
     Base                               = require('../utils/base');
@@ -18,6 +18,7 @@ class PromptUI extends Base {
         questions = _.isArray(questions) ? from(questions) : questions;
         this.process = questions.pipe(
             concatMap(this.processQuestion.bind(this)),
+            // mergeMap(()=>fromEvent(this.rl,'SIGINT').pipe(tap(()=>console.log('oo')))),
             publish(), // Creates a hot Observable. It prevents duplicating prompts.
             refCount()
         )
@@ -29,8 +30,11 @@ class PromptUI extends Base {
         )
         .toPromise()
         .then(this.onCompletion.bind(this))
+        .catch(this.error.bind(this))
     }
-
+    error(){
+        console.log()
+    }
     /* Once all prompt are over */
     onCompletion(){
         this.close();
@@ -43,15 +47,15 @@ class PromptUI extends Base {
             concatMap(this.setDefaultType.bind(this)),
             concatMap(this.filterIfRunnable.bind(this)),
             concatMap(()=>
-                utils.fetchAsyncQuestionProperty(question,'message',this.answers)
+            utils.fetchAsyncQuestionProperty(question,'message',this.answers)
             ),
             concatMap(()=>
-                utils.fetchAsyncQuestionProperty(question,'default',this.answers)
+            utils.fetchAsyncQuestionProperty(question,'default',this.answers)
             ),
             concatMap(()=>
-                utils.fetchAsyncQuestionProperty(question,'choices',this.answers)
+            utils.fetchAsyncQuestionProperty(question,'choices',this.answers)
             ),
-            concatMap(this.fetchAnswer.bind(this))
+            concatMap(this.fetchAnswer.bind(this)),
         ))
     }        
     setDefaultType(question){
@@ -69,6 +73,7 @@ class PromptUI extends Base {
     fetchAnswer(question){
         let Prompt = this.prompts[question.type];
         this.activePrompt = new Prompt(question,this.rl,this.answers);
+        
         return defer(()=>from(
             this.activePrompt.run().then(answer=>({name:question.name,answer}))
         ))

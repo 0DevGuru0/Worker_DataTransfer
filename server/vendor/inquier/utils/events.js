@@ -16,7 +16,7 @@ module.exports = rl=>{
     let line    = fromEvent(rl,'line').pipe(share());
     let exit    = fromEvent(rl,'close').pipe(share())
     let exitKey = fromEvent(rl,'SIGINT').pipe(share())
-
+    let ordinaryKey = fromEvent(rl.input,'keypress',normalizeKeypressEvents)
 
     let normalizedUpKey = keyPress.pipe(
         filter( ({key})=>key.name === 'up' || key.name === 'k' || (key.name === 'p' && key.ctrl) ),
@@ -46,5 +46,5 @@ module.exports = rl=>{
         share()
     );
 
-    return{ line, keyPress, normalizedUpKey, normalizedDownKey, numberKey, spaceKey, aKey, iKey,exit,exitKey }
+    return{ line, keyPress, normalizedUpKey, normalizedDownKey, numberKey, spaceKey, aKey, iKey,exit,exitKey,ordinaryKey }
 }

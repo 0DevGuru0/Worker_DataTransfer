@@ -11,7 +11,8 @@ const _         = require('lodash'),
     Base        = require('./base'),
     observe     = require('../utils/events'),
     Paginator   = require('../utils/paginator'),
-    { flatMap, map, take, takeUntil,finalize } = require('rxjs/operators');
+    {fromEvent} = require('rxjs'),
+    { mergeMap, map, take, takeUntil,tap } = require('rxjs/operators');
 
 class ListPrompt extends Base {
   constructor(questions, rl, answers) {
@@ -20,7 +21,10 @@ class ListPrompt extends Base {
     if (!this.opt.choices) {
       this.throwParamError('choices');
     }
-
+    this.exit = false;
+    this.rl.on('SIGINT',()=>{
+      this.exit = true
+    })
     this.firstRender = true;
     this.selected = 0;
 
@@ -69,7 +73,7 @@ class ListPrompt extends Base {
       .pipe(
         take(1),
         map(this.getCurrentValue.bind(this)),
-        flatMap(value => runAsync(self.opt.filter)(value).catch(err => err))
+        mergeMap(value => runAsync(self.opt.filter)(value).catch(err => err))
       )
       .forEach(this.onSubmit.bind(this));
     // Init the prompt
@@ -91,7 +95,6 @@ class ListPrompt extends Base {
     if (this.firstRender) {
       message += chalk.dim('[Use arrow keys]');
     }
-
     // Render choices or answer depending on the state
     if (this.status === 'answered') {
       message += chalk.cyan(this.opt.choices.getChoice(this.selected).short);
@@ -103,7 +106,7 @@ class ListPrompt extends Base {
       message +=
         '\n' + this.paginator.paginate(choicesStr, indexPosition, this.opt.pageSize);
     }
-
+    
     this.firstRender = false;
 
     this.screen.render(message);
@@ -115,7 +118,6 @@ class ListPrompt extends Base {
 
   onSubmit(value) {
     this.status = 'answered';
-
     // Render prompt
     this.render();
     this.screen.done();
