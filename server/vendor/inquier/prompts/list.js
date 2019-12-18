@@ -11,7 +11,7 @@ const _         = require('lodash'),
     Base        = require('./base'),
     observe     = require('../utils/events'),
     Paginator   = require('../utils/paginator'),
-    {race} = require('rxjs'),
+    {race}      = require('rxjs'),
     { mergeMap, map, take, takeUntil,tap } = require('rxjs/operators');
 
 class ListPrompt extends Base {
@@ -52,7 +52,6 @@ class ListPrompt extends Base {
     var self = this;
 
     var events = observe(this.rl);
-
     events.normalizedUpKey
       .pipe(takeUntil(race(events.line,events.exitKey)))
       .forEach(this.onUpKey.bind(this));

@@ -7,7 +7,7 @@ const clc               = require('chalk'),
 const BaseUI = require('../../ui/base');
 let transfer= null
 class StartComponent extends BaseUI {
-    start(str,rl){
+    start(str,parent){
         let container = _.map(str.trim().split(' '),elem=>elem.toLowerCase().trim())
         if( container[1] === '--help' ||container.length===1 ){
             this.horizontalLine(74)
@@ -27,22 +27,22 @@ class StartComponent extends BaseUI {
             return this.horizontalLine(74)
         }
         if(container[2] === "auto"){
-            if(container[3].startsWith("--bucket")){ return this.autoBucket(rl) }
-             if(container[3] === "--all"){ return this.autoAll(rl) }
+            if(container[3].startsWith("--bucket")){ return this.autoBucket(parent) }
+             if(container[3] === "--all"){ return this.autoAll(parent) }
         }
         if(container[2] === "manual"){
-            return this.manual(rl)
+            return this.manual(parent)
         }
         if(container[1] === 'transfer' && container.length===2){
             transfer = 'master'
-            return this.master(rl)
+            return this.master(parent)
         }
         container.shift()
         return console.log(
             clc.bold.black.bgYellow('[ DataTransfer ]'),
             `'${container.join(" ")}' is not a correct command. See 'start --help'.`)
     }
-    autoBucket(rl){
+    autoBucket(parent){
         let question = [
             {
                 type: 'list',
@@ -71,9 +71,9 @@ class StartComponent extends BaseUI {
             validate: answer=>answer.length<1 ?'You must choose at least one topping.':true
         }];
         let callback = ({intervalTime,redisBuckets})=> auto_bucket().start(redisBuckets,intervalTime)
-        return ask.prompt(rl,question,callback)
+        return ask.prompt(parent,question,callback)
     }
-    autoAll(rl){
+    autoAll(parent){
         let question = [{
             type: 'list',
             name: 'intervalTime',
@@ -82,9 +82,9 @@ class StartComponent extends BaseUI {
             choices: ['24hour', '12hour', '9hour', '6hour', '3hour']
         }]
         let callback = ({intervalTime})=> auto_all.start(intervalTime) 
-        ask.prompt(rl,question,callback)
+        ask.prompt(parent,question,callback)
     }
-    manual(rl){
+    manual(parent){
         let question = [
             {
             type: 'checkbox',
@@ -108,7 +108,7 @@ class StartComponent extends BaseUI {
 
         return ask.prompt(question).then( )    
     }
-    master(rl){
+    master(parent){
         let question = [
             {
                 type: 'list',
@@ -128,7 +128,7 @@ class StartComponent extends BaseUI {
             // if( answer === 'all' || answer === 'ALL' ) return this.autoAll()
             // if( answer === 'custom' || answer === 'custom' ) return this.autoBucket()
         }
-        return ask.prompt(rl,question,callback)
+        return ask.prompt(parent,question,callback)
     }
 }
 

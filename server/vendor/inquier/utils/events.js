@@ -1,6 +1,6 @@
 'use strict';
 var { fromEvent } = require('rxjs');
-var { filter, map, share, takeUntil,mapTo,startWith,mergeMap,iif,tap } = require('rxjs/operators');
+var { filter, map, share, takeUntil,mapTo,startWith,mergeMap,skip,tap } = require('rxjs/operators');
 
 function normalizeKeypressEvents(value, key) {
   return { value: value, key: key || {} };

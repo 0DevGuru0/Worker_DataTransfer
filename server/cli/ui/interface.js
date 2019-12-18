@@ -2,27 +2,16 @@ const readline        = require('readline');
     events            = require('events'),
     _                 = require('lodash'),
     clc               = require('chalk'),
-    {Spinner}         = require('clui'),
-    auto_all          = require('../components/start/transfer/auto/all'),
-    auto_bucket       = require('../components/start/transfer/auto/bucket'),
-    manualTransfer    = require('../components/start/transfer/manual')
-    ask               = require('../../vendor/inquier'),
-    os                = require('os'),
-    v8                = require('v8'),
-    Q                 = require('q'),
-    asyncRedis        = require('async-redis'),
-    {Gauge,Progress}  = require('clui'),
-    {MongoDB,RedisDB} = require('../../index'),
-    cliWidth          = require('cli-width'),
-    ttys              = require('ttys');
-const MuteStream    = require('mute-stream');
-const BaseUI = require('./base')
-const StartComponent = require('../components/start')
-const StatusHandler = require('../components/status')
-const ManPage = require('./man')
+    Q                 = require('q');
+
+const MuteStream   = require('mute-stream'),
+    BaseUI         = require('./base'),
+    StartComponent = require('../components/start'),
+    StatusHandler  = require('../components/status'),
+    ManPage        = require('./man'),
+    stopPro        = require('./stop');
 
 class _EventsEmitter extends events{}
-
 class CliInterface extends BaseUI {
     constructor(props){
         super(props)
@@ -33,21 +22,20 @@ class CliInterface extends BaseUI {
         this.manCL    = new ManPage();
     }
     eventListeners(){
-        this.e.on('start',  str=>this.startCL.start(str,this.rl))
+        this.e.on('start',  str=>this.startCL.start(str,this))
         this.e.on('status', ()=>this.statusCl.master(this.rl));
         this.e.on('log',    ()=>this.log()); 
         this.e.on('test',   ()=>this.test()); 
         this.e.on('health', ()=>this.healthCheck());
         this.e.on('setting',()=>this.setting());
         this.e.on('exit',   ()=>this.exit());
-        this.e.on('stop',   ()=>this.stop());
+        this.e.on('stop',   ()=>stopPro(this));
         this.e.on('man',    ()=>this.manCL.run(this.possibleCommands));
         this.e.on('help',   ()=>this.man());
         this.e.on('clear',  ()=>console.clear());
-        this.possibleCommands = this.e.eventNames()
     }
     init(){
-        let commands = this.possibleCommands
+        let commands = this.e.eventNames()
         let ms = new MuteStream();
         ms.pipe(process.stdout);
         let output = ms;  
@@ -63,8 +51,8 @@ class CliInterface extends BaseUI {
 
         this.rl.on('SIGINT',()=>{
             if(this.exitAllow<1){
-                console.log(clc.red.bold('\r\n(To exit, press ^C again or ^D)')) 
-                this.rl.prompt()
+                console.log(clc.red.bold('\r\n(To exit, press ^C again or ^D)')); 
+                this.rl.prompt();
             }else{ this.onForceClose() }
             this.exitAllow++
         });
@@ -89,12 +77,9 @@ class CliInterface extends BaseUI {
                 }
             })
             if(misType[0]==='misType'){
-                this.rl.question(`Did you mean? ${misType[1]} Type::[Y]Yes/[N]No >>`,answer=>{
-                    if(answer === "Y"
-                        || answer === "y" 
-                        || answer === "yes" 
-                        || answer === "Yes" 
-                        || answer === "YES") this.e.emit(misType[1],misType[2])
+                this.rl.question(`Did you mean? ${misType[1]} Type::[Y]Yes/[N]No >>`,ans=>{
+                    let regex = /((yes)|[y])\b/gmi;
+                    if((regex.test(ans))) this.e.emit(misType[1],misType[2])
                     this.rl.prompt()
                 })
             }
@@ -113,52 +98,8 @@ class CliInterface extends BaseUI {
         process.removeListener('exit', this.onForceClose);
         this.rl.pause();
         this.rl.close();
-       process.exit(0)
+        process.exit(0)
     }
-    stop(){
-        let all = auto_all.initialize() 
-        let bucket = auto_bucket().initialize()
-        let Manual = manualTransfer().initialize()
-        if(all||bucket||Manual){
-            let question= clc.green("? ")+
-                clc.bold.white('Do yo really want to stop operation?')+
-                clc.gray(" [y/n] ");
-            let answer = answer=>{
-                if(answer === "Y" || answer === "y" 
-                || answer === "yes" || answer === "Yes" || answer === "YES"){
-                    let stopping = new Spinner(
-                        'Stopping the Transfer Operation...', 
-                        ['⣾','⣽','⣻','⢿','⡿','⣟','⣯','⣷']
-                    );
-                    stopping.start()
-                    if(Manual){
-                        manualTransfer().stop().then(()=>{
-                            stopping.stop()
-                            process.stdout.write('\n');
-                            console.log(clc.black.bold.bgGreen('Transfer Operation turned off.'))
-                            this.rl.prompt()
-                        })
-                    }
-                    if(all){
-                        auto_all.stop().then(()=>{
-                            stopping.stop()
-                            process.stdout.write('\n');
-                            console.log(clc.black.bold.bgGreen('AutoMatic Transfer turned off.'))
-                            this.rl.prompt()
-                        })
-                    }
-                    if(bucket){
-                        auto_bucket().stop().then(()=>{
-                            stopping.stop()
-                            process.stdout.write('\n');
-                            console.log(clc.black.bold.bgGreen('AutoMatic Transfer turned off.'))
-                            this.rl.prompt()
-                        })
-                    }
-                }
-            }
-            this.rl.question(question,answer)
-        }else{ return console.log('no Operation or Interval has been set Yet') }
-    }
+
 }
 module.exports = CliInterface;

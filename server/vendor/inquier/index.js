@@ -24,5 +24,11 @@ inquirer.createPromptModule = (opt)=>{
  * @param  {Function} cb - Callback being passed the user answers
  * @return {inquirer.ui.Prompt}
  */
-inquirer.prompt = (rl,Q,cb)=>inquirer.createPromptModule(rl)(Q).then(cb).finally(()=>rl.prompt())
+inquirer.prompt = (p,Q,cb)=>{
+    p.e.removeAllListeners()
+    return inquirer.createPromptModule(p.rl)(Q)
+        .then(ans=>{p.eventListeners();return ans})
+        .then(cb)
+        .finally(_=>p.rl.prompt())
+}
 module.exports = inquirer;
