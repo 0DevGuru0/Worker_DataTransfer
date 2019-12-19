@@ -6,11 +6,13 @@
 let _ = require('lodash')
 let col = require('chalk');
 let runAsync = require('run-async');
-let {mergeMap,share,take,filter,takeUntil} = require('rxjs/operators')
+let {mergeMap,share,take,filter,takeUntil,tap} = require('rxjs/operators')
 let Choices = require('../objects/choices');
+const cliCursor   = require('cli-cursor');
+
 let ScreenManager = require('../utils/screen-manager');
 class Prompt {
-    constructor(que,rl,ans){ 
+    constructor(que,rl,exEvents,ans){ 
         _.assign(this,{
             answer:ans,
             status: 'pending'
@@ -29,6 +31,7 @@ class Prompt {
         if(Array.isArray(this.opt.choices)) this.opt.choices = new Choices(this.opt.choices,ans)
 
         this.rl = rl;
+        this.exEvent = exEvents
         this.screen = new ScreenManager(this.rl);
     }
 
@@ -45,6 +48,16 @@ class Prompt {
 
     close(){
         this.screen.releaseCursor()
+    }
+
+    onForceClose(){
+        cliCursor.show();
+        this.screen.done();
+        this.rl.prompt('');
+        this.close();
+        this.exEvent
+        //trigger external layout events 
+
     }
 
     handleSubmitEvents(submit){

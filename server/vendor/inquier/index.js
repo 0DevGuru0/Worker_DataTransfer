@@ -26,7 +26,7 @@ inquirer.createPromptModule = (opt)=>{
  */
 inquirer.prompt = (p,Q,cb)=>{
     p.e.removeAllListeners()
-    return inquirer.createPromptModule(p.rl)(Q)
+    return inquirer.createPromptModule(p)(Q)
         .then(ans=>{p.eventListeners();return ans})
         .then(cb)
         .finally(_=>p.rl.prompt())

@@ -6,7 +6,8 @@ const _             = require('lodash'),
     col             = require('chalk'),
     cliCursor       = require('cli-cursor'),
     fig             = require('figures'),
-    {map,takeUntil} = require('rxjs/operators'),
+    {race}      = require('rxjs'),
+    {map,takeUntil,tap} = require('rxjs/operators'),
     Base            = require('./base'),
     observe         = require('../utils/events'),
     Paginator       = require('../utils/paginator');
@@ -33,31 +34,52 @@ class CheckBoxPrompt extends Base {
         let validation = this.handleSubmitEvents(
             events.line.pipe( map(this.getCurrentValue.bind(this)) )
         );
-        validation.success.forEach(this.onEnd.bind(this))
-        validation.error.forEach(this.onError.bind(this))
+        validation.success.pipe(
+            takeUntil(
+                events.exitKey.pipe(
+                    takeUntil(events.line),
+                    tap(this.onForceClose.bind(this))
+                )
+            )
+        ).forEach(this.onEnd.bind(this))
+
+        validation.error.pipe(
+            takeUntil(
+                events.exitKey.pipe(
+                    takeUntil(events.line),
+                    tap(this.onForceClose.bind(this))
+                )
+            )
+        ).forEach(this.onError.bind(this))
         
         events.normalizedUpKey
-            .pipe(takeUntil(validation.success))
+            .pipe(takeUntil(race(validation.success,events.exitKey)))
+            // .pipe(takeUntil(events.exitKey))
             .forEach(this.onUpKey.bind(this));
         
         events.normalizedDownKey
-            .pipe(takeUntil(validation.success))
+            .pipe(takeUntil(race(validation.success,events.exitKey)))
+            // .pipe(takeUntil(validation.success))
             .forEach(this.onDownKey.bind(this));
 
         events.numberKey
-            .pipe(takeUntil(validation.success))
+            .pipe(takeUntil(race(validation.success,events.exitKey)))
+            // .pipe(takeUntil(validation.success))
             .forEach(this.onNumberKey.bind(this));
 
         events.spaceKey
-            .pipe(takeUntil(validation.success))
+            .pipe(takeUntil(race(validation.success,events.exitKey)))
+            // .pipe(takeUntil(validation.success))
             .forEach(this.onSpaceKey.bind(this));
             
         events.aKey
-            .pipe(takeUntil(validation.success))
+            .pipe(takeUntil(race(validation.success,events.exitKey)))
+            // .pipe(takeUntil(validation.success))
             .forEach(this.onAllKey.bind(this));
-
+        events.exitKey.pipe(tap(_=>console.log('exit')))
         events.iKey
-            .pipe(takeUntil(validation.success))
+            .pipe(takeUntil(race(validation.success,events.exitKey)))
+            // .pipe(takeUntil(validation.success))
             .forEach(this.onInverseKey.bind(this));
 
         cliCursor.hide();

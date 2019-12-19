@@ -1,8 +1,7 @@
 'use strict'
-
 const _                                = require('lodash'),
     {defer,EMPTY,from,of}           = require('rxjs'),
-    {concatMap,filter,publish,reduce,refCount} = require('rxjs/operators'),
+    {concatMap,filter,publish,reduce,refCount,tap} = require('rxjs/operators'),
     runAsync                           = require('run-async'),
     utils                              = require('../utils/utils'),
     Base                               = require('../utils/base');
@@ -56,17 +55,19 @@ class PromptUI extends Base {
         if(!this.prompts[question.type]) question.type = 'input';
         return defer(()=>of(question));
     }
+    
     filterIfRunnable(question){
         if(question.when === false) return EMPTY;
         if(!_.isFunction(question.when)) return of(question);
         let answers = this.answers;
+        
         return defer(()=>from(runAsync(question.when)(answers).then(shouldRun=>{
             if(shouldRun) return question;
-        }))).pipe(filter(val=>val !== null))
+        }))).pipe(filter(val=>val !== undefined))
     }
     fetchAnswer(question){
         let Prompt = this.prompts[question.type];
-        this.activePrompt = new Prompt(question,this.rl,this.answers);
+        this.activePrompt = new Prompt(question,this.rl,this.exEvents,this.answers);
         
         return defer(()=>from(
             this.activePrompt.run().then(answer=>({name:question.name,answer}))

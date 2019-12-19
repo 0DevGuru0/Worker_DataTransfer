@@ -2,9 +2,11 @@
 /**
  * Base interface class other can inherits from
  */
+
 class BaseUI {
-    constructor(rl){
-        this.rl = rl
+    constructor(opt){
+        this.rl = opt.rl
+        this.exEvents = opt.eventListeners()
         this.rl.resume();
     }
     close(){

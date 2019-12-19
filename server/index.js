@@ -7,7 +7,7 @@ require('dotenv').config()
 
 // Container
 const {visitorsWorker,visitorsCont} = require('../containers/visitors');
-const {usersWorker,usersCont}       = require('../containers/users');
+const {usersWorker,   usersCont   } = require('../containers/users');
 //Redis
 const Redis = require('redis')
 function RedisDB(){

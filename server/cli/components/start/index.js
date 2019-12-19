@@ -104,9 +104,28 @@ class StartComponent extends BaseUI {
                     {name:'totalUsersList'}
             ],
             validate: answer=>answer.length<1 ?'You must choose at least one topping.':true
+        },
+        {
+            type: 'checkbox',
+            message: 'Select Buckets for Transfer',
+            name: 'redisBuckets2',
+            pageSize:"100",
+            choices: [
+                new ask.Separator(' = Visitors = '),
+                    {name:'all_visitor_buckets'},
+                    {name:'onlineVisitorsList'},
+                    {name:'pageViews'}, 
+                    {name:'visitorsState'}, 
+                new ask.Separator(' = Users = '),
+                    {name:'all_user_buckets'},
+                    {name:'onlineUsersList'},
+                    {name:'totalUsersVerified'},
+                    {name:'totalUsersList'}
+            ],
+            validate: answer=>answer.length<1 ?'You must choose at least one topping.':true
         }]
-
-        return ask.prompt(question).then( )    
+        let callback = ans=>console.log(JSON.stringify(ans, null, '  '))
+        return ask.prompt(parent,question,callback)   
     }
     master(parent){
         let question = [
@@ -120,13 +139,17 @@ class StartComponent extends BaseUI {
                 type: 'list',
                 name: 'transferBucket',
                 message: 'Which buckets would you prefer to transfer auto?',
-                choices: ['all','custom']
+                choices: ['all','custom'],
+                when:ans=>ans.transferMethod === 'auto'
             }
         ]
         let callback = answers => {
             console.log(JSON.stringify(answers, null, '  '))
-            // if( answer === 'all' || answer === 'ALL' ) return this.autoAll()
-            // if( answer === 'custom' || answer === 'custom' ) return this.autoBucket()
+            // return answers.transferMethod === 'manual' 
+            //     ? this.manual()
+            //     : answers.transferBucket === 'all' 
+            //         ? this.autoAll()
+            //         : this.autoBucket() ; 
         }
         return ask.prompt(parent,question,callback)
     }
