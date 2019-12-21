@@ -104,27 +104,9 @@ class StartComponent extends BaseUI {
                     {name:'totalUsersList'}
             ],
             validate: answer=>answer.length<1 ?'You must choose at least one topping.':true
-        },
-        {
-            type: 'checkbox',
-            message: 'Select Buckets for Transfer',
-            name: 'redisBuckets2',
-            pageSize:"100",
-            choices: [
-                new ask.Separator(' = Visitors = '),
-                    {name:'all_visitor_buckets'},
-                    {name:'onlineVisitorsList'},
-                    {name:'pageViews'}, 
-                    {name:'visitorsState'}, 
-                new ask.Separator(' = Users = '),
-                    {name:'all_user_buckets'},
-                    {name:'onlineUsersList'},
-                    {name:'totalUsersVerified'},
-                    {name:'totalUsersList'}
-            ],
-            validate: answer=>answer.length<1 ?'You must choose at least one topping.':true
-        }]
+        },]
         let callback = ans=>console.log(JSON.stringify(ans, null, '  '))
+        
         return ask.prompt(parent,question,callback)   
     }
     master(parent){

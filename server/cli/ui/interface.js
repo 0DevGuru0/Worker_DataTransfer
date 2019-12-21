@@ -20,10 +20,9 @@ class CliInterface extends BaseUI {
         this.startCL  = new StartComponent();
         this.statusCl = new StatusHandler(); 
         this.manCL    = new ManPage();
-        this.e.defaultMaxListeners=15
-        process.setMaxListeners(100)
     }
     eventListeners(){
+        
         this.e.on('start',  str=>this.startCL.start(str,this))
         this.e.on('status', ()=>this.statusCl.master(this.rl));
         this.e.on('log',    ()=>this.log()); 

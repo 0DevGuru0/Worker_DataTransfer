@@ -12,7 +12,7 @@ const cliCursor   = require('cli-cursor');
 
 let ScreenManager = require('../utils/screen-manager');
 class Prompt {
-    constructor(que,rl,exEvents,ans){ 
+    constructor(que,rl,e,ans){ 
         _.assign(this,{
             answer:ans,
             status: 'pending'
@@ -31,7 +31,7 @@ class Prompt {
         if(Array.isArray(this.opt.choices)) this.opt.choices = new Choices(this.opt.choices,ans)
 
         this.rl = rl;
-        this.exEvent = exEvents
+        this.exEvent = e
         this.screen = new ScreenManager(this.rl);
     }
 
@@ -56,6 +56,7 @@ class Prompt {
         this.rl.prompt('');
         this.close();
         this.exEvent
+        
         //trigger external layout events 
 
     }

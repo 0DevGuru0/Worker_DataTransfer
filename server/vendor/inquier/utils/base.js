@@ -5,8 +5,9 @@
 
 class BaseUI {
     constructor(opt){
+        // opt is `this` argument of interface
         this.rl = opt.rl
-        this.exEvents = opt.eventListeners()
+        this.exEvent = opt.eventListeners()
         this.rl.resume();
     }
     close(){

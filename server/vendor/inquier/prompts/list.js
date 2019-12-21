@@ -15,8 +15,8 @@ const _         = require('lodash'),
     { mergeMap, map, take, takeUntil,tap } = require('rxjs/operators');
 
 class ListPrompt extends Base {
-  constructor(questions, rl,exEvent, answers) {
-    super(questions, rl,exEvent,answers);
+  constructor(questions, rl, answers) {
+    super(questions, rl,answers);
     this.rl = rl
     if (!this.opt.choices) {
       this.throwParamError('choices');
@@ -51,15 +51,15 @@ class ListPrompt extends Base {
     var self = this;
     var events = observe(this.rl);
     events.normalizedUpKey
-      .pipe(takeUntil(race(events.line,events.exitKey)))
+      .pipe(takeUntil(events.line))
       .forEach(this.onUpKey.bind(this));
 
     events.normalizedDownKey
-      .pipe(takeUntil(race(events.line,events.exitKey)))
+      .pipe(takeUntil(events.line))
       .forEach(this.onDownKey.bind(this));
 
     events.numberKey
-      .pipe(takeUntil(race(events.line,events.exitKey)))
+      .pipe(takeUntil(events.line))
       .forEach(this.onNumberKey.bind(this));
 
     events.line

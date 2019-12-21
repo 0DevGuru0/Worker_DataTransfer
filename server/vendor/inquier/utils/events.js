@@ -1,5 +1,5 @@
 'use strict';
-var { fromEvent } = require('rxjs');
+var { fromEvent,race } = require('rxjs');
 var { filter, map, share, takeUntil,mapTo,startWith,mergeMap,skip,tap } = require('rxjs/operators');
 
 function normalizeKeypressEvents(value, key) {
@@ -8,13 +8,13 @@ function normalizeKeypressEvents(value, key) {
 
 module.exports = rl=>{
     
+    let exitKey = fromEvent(rl,'SIGINT').pipe(takeUntil( fromEvent(rl,'close'),share()))
     let keyPress = fromEvent(rl.input,'keypress',normalizeKeypressEvents).pipe(
-        takeUntil( fromEvent(rl,'close') ),
+        takeUntil(exitKey),
         filter( ({key})=> key.name!=='enter' || key.name!=="return" )
     );
     let line    = fromEvent(rl,'line').pipe(share());
     let exit    = fromEvent(rl,'close').pipe(share())
-    let exitKey = fromEvent(rl,'SIGINT').pipe(takeUntil( fromEvent(rl,'close'),share()))
     let ordinaryKey = fromEvent(rl.input,'keypress',normalizeKeypressEvents)
 
     let normalizedUpKey = keyPress.pipe(
