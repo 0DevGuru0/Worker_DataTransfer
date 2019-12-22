@@ -67,7 +67,7 @@ class PromptUI extends Base {
     }
     fetchAnswer(question){
         let Prompt = this.prompts[question.type];
-        this.activePrompt = new Prompt(question,this.rl,this.exEvent,this.answers);
+        this.activePrompt = new Prompt(question,this.rl,this.exEvent,this.stopProcess,this.answers);
         
         return defer(()=>from(
             this.activePrompt.run().then(answer=>({name:question.name,answer}))

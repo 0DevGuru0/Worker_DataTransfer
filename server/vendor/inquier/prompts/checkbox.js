@@ -32,53 +32,39 @@ class CheckBoxPrompt extends Base {
         let events = observe(this.rl);
 
         let validation = this.handleSubmitEvents(
-            events.line.pipe( map(this.getCurrentValue.bind(this)),takeUntil(
-                events.exitKey.pipe(
-                    takeUntil(events.line),
-                    tap(this.onForceClose.bind(this))
+            events.line.pipe( 
+                map(this.getCurrentValue.bind(this)),
+                takeUntil(
+                    events.exitKey.pipe( 
+                        takeUntil(events.line),
+                        tap(this.onForceClose.bind(this)) 
+                    )
                 )
-            ))
+            )
         );
-        validation.success.pipe(
-            
-        ).forEach(this.onEnd.bind(this))
-
-        validation.error.pipe(
-            // takeUntil(
-            //     events.exitKey.pipe(
-            //         takeUntil(events.line),
-            //         tap(this.onForceClose.bind(this))
-            //     )
-            // )
-        ).forEach(this.onError.bind(this))
+        validation.success.forEach(this.onEnd.bind(this))
+        validation.error.forEach(this.onError.bind(this))
         
         events.normalizedUpKey
-            // .pipe(takeUntil(race(validation.success,events.exitKey)))
             .pipe(takeUntil(validation.success))
             .forEach(this.onUpKey.bind(this));
         
         events.normalizedDownKey
-            // .pipe(takeUntil(race(validation.success,events.exitKey)))
             .pipe(takeUntil(validation.success))
             .forEach(this.onDownKey.bind(this));
 
         events.numberKey
-            // .pipe(takeUntil(race(validation.success,events.exitKey)))
             .pipe(takeUntil(validation.success))
             .forEach(this.onNumberKey.bind(this));
 
         events.spaceKey
-            // .pipe(takeUntil(race(validation.success,events.exitKey)))
             .pipe(takeUntil(validation.success))
             .forEach(this.onSpaceKey.bind(this));
             
         events.aKey
-            // .pipe(takeUntil(race(validation.success,events.exitKey)))
             .pipe(takeUntil(validation.success))
             .forEach(this.onAllKey.bind(this));
-        events.exitKey.pipe(tap(_=>console.log('exit')))
         events.iKey
-            // .pipe(takeUntil(race(validation.success,events.exitKey)))
             .pipe(takeUntil(validation.success))
             .forEach(this.onInverseKey.bind(this));
 
@@ -87,6 +73,7 @@ class CheckBoxPrompt extends Base {
         this.firstRender = false;
         return this;
     }
+    
     render(error){
         let message = this.getQuestion();
         let bottomContent = '';
@@ -133,7 +120,7 @@ class CheckBoxPrompt extends Base {
     }
     onDownKey(){
         let len =  this.opt.choices.realLength;
-        this.pointer = this.pointer < len - 1 ? this.pointer +1 : 0;
+        this.pointer = this.pointer < len - 1 ? this.pointer + 1 : 0;
         this.render()
     }
     onNumberKey(input){
@@ -184,7 +171,7 @@ function renderChoices(choices,pointer){
             output += '- ' + choice.name;
             output += '( '+( _.isString(choice.disabled)?choice.disabled:'Disabled' )+' )';
         }else{
-            let line = getCheckBox(choice.checked,choice);
+            let line = getCheckbox(choice.checked,choice);
             output += i-separatorOffset === pointer 
                 ? col.cyan(fig.pointer+line)
                 :' ' + line ; 
@@ -200,7 +187,7 @@ function renderChoices(choices,pointer){
  * @return {String} Composited checkbox string
  */
 
-function getCheckBox(checked,choice){
+function getCheckbox(checked,choice){
     return checked 
         ? col.green(fig.radioOn) + ' ' + col.bgGreen.black(choice.name) 
         : fig.radioOff + ' ' + choice.name ; 

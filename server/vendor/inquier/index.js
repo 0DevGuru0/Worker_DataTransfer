@@ -17,15 +17,17 @@ inquirer.createPromptModule = (opt)=>{
     }
     return promptModule;
 }
-
+inquirer.promptParent = null
 /**
  * Public CLI helper interface
  * @param  {Array|Object|Rx.Observable} questions - Questions settings array
  * @param  {Function} cb - Callback being passed the user answers
  * @return {inquirer.ui.Prompt}
  */
-inquirer.prompt = (p,Q,cb)=>{
-    p.e.removeAllListeners()
-    return inquirer.createPromptModule(p)(Q).then(cb).finally(_=>p.rl.prompt())
+inquirer.prompt = (Q,cb)=>{
+    inquirer.promptParent.e.removeAllListeners()
+    return inquirer.createPromptModule(inquirer.promptParent)(Q)
+        .then(cb)
+        .finally(_=>inquirer.promptParent.rl.prompt())
 }
 module.exports = inquirer;

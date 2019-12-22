@@ -13,8 +13,8 @@ module.exports = rl=>{
         takeUntil(exitKey),
         filter( ({key})=> key.name!=='enter' || key.name!=="return" )
     );
-    let line    = fromEvent(rl,'line').pipe(share());
-    let exit    = fromEvent(rl,'close').pipe(share())
+    let line    = fromEvent(rl,'line');
+    let exit    = fromEvent(rl,'close')
     let ordinaryKey = fromEvent(rl.input,'keypress',normalizeKeypressEvents)
 
     let normalizedUpKey = keyPress.pipe(

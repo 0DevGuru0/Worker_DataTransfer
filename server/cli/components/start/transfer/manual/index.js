@@ -6,12 +6,12 @@ const {usersCont} = require('../../../../../../containers/users')
 const {visitorsCont} = require('../../../../../../containers/visitors')
 const {MongoDB,RedisDB} = require('../../../../../index')
 const asyncRedis = require('async-redis')
-module.exports=()=>{
+module.exports=(inter)=>{
     this.buckets = Object.assign({},usersCont,visitorsCont)
     this.allVisi = Object.keys(visitorsCont)
     this.allUsers = Object.keys(usersCont)
     return{
-        start:(bucket,inter)=>{
+        start:(bucket)=>{
             console.log('\n')
            let DBTransfer = (redis)=>{
                 let client      = asyncRedis.decorate(redis);
@@ -88,8 +88,8 @@ module.exports=()=>{
                     );
                     this.initialize = false;
                     deferred.resolve()
-                })
-            })
+                },)
+            }).catch(e=>console.log('stop forced error'))
             return deferred.promise
         }
     }

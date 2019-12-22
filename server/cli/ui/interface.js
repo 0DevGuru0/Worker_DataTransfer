@@ -24,16 +24,16 @@ class CliInterface extends BaseUI {
     eventListeners(){
         
         this.e.on('start',  str=>this.startCL.start(str,this))
-        this.e.on('status', ()=>this.statusCl.master(this.rl));
-        this.e.on('log',    ()=>this.log()); 
-        this.e.on('test',   ()=>this.test()); 
-        this.e.on('health', ()=>this.healthCheck());
-        this.e.on('setting',()=>this.setting());
-        this.e.on('exit',   ()=>this.exit());
-        this.e.on('stop',   ()=>stopPro(this));
-        this.e.on('man',    ()=>this.manCL.run(this.possibleCommands));
-        this.e.on('help',   ()=>this.man());
-        this.e.on('clear',  ()=>console.clear());
+        this.e.on('status',  _=>this.statusCl.master(this.rl));
+        this.e.on('log',     _=>this.log()); 
+        this.e.on('test',    _=>this.test()); 
+        this.e.on('health',  _=>this.healthCheck());
+        this.e.on('setting', _=>this.setting());
+        this.e.on('exit',    _=>this.exit());
+        this.e.on('stop',    _=>stopPro(this));
+        this.e.on('man',     _=>this.manCL.run(this.possibleCommands));
+        this.e.on('help',    _=>this.man());
+        this.e.on('clear',   _=>console.clear());
     }
     init(){
         let commands = this.e.eventNames()
@@ -41,9 +41,7 @@ class CliInterface extends BaseUI {
         ms.pipe(process.stdout);
         let output = ms;  
          this.rl = readline.createInterface({
-            input:process.stdin,
-            output,
-            prompt:">>",
+            input:process.stdin, output, prompt:">>",
             completer:line=>{
                 let hits = commands.filter(c=> c.startsWith(line))
                 return [hits.length ? hits : commands, line];
@@ -65,11 +63,9 @@ class CliInterface extends BaseUI {
             str = typeof(str) == 'string' && str.trim().length > 0 ?str.trim().toLowerCase() : false;
             let result = commands.some(el=>{
                 let regex = new RegExp('\\b'+el+'\\b',"g")
-                if(!str){ return false }
+                if(!str) return false
                 if(str.match(regex)){
-                    str.split(' ')[0] !== el
-                        ?misType.push('misType',el , str)
-                        :this.e.emit(el,str)
+                    str.split(' ')[0] !== el ?misType.push('misType',el , str) :this.e.emit(el,str)
                     return true
                 }
                 if(el.indexOf(str)>-1 || str.startsWith(el)){
@@ -80,7 +76,7 @@ class CliInterface extends BaseUI {
             if(misType[0]==='misType'){
                 this.rl.question(`Did you mean? ${misType[1]} Type::[Y]Yes/[N]No >>`,ans=>{
                     let regex = /((yes)|[y])\b/gmi;
-                    if((regex.test(ans))) this.e.emit(misType[1],misType[2])
+                    if(( regex.test(ans) )) this.e.emit(misType[1],misType[2])
                     this.rl.prompt()
                 })
             }

@@ -6,14 +6,12 @@ const auto_all = require('../components/start/transfer/auto/all'),
     manualTransfer = require('../components/start/transfer/manual');
 
 module.exports = (parent) => {
-    let all    = auto_all.initialize()
+    let all    = auto_all().initialize()
     let bucket = auto_bucket().initialize()
     let Manual = manualTransfer().initialize()
 
     if (all || bucket || Manual) {
-        let question = col.green("? ") +
-            col.bold.white('Do yo really want to stop operation?') +
-            col.gray(" [Y]Yes/[N]No");
+        let question = col.green("? ") + col.bold.white('Do yo really want to stop operation?') + col.gray(" [Y]Yes/[N]No");
         let answer = ans =>{
              let regex = /((yes)|[y])\b/gmi;
             if (regex.test(ans)) {
@@ -48,6 +46,6 @@ module.exports = (parent) => {
                 }
             }
         }
-        this.rl.question(question, answer)
+        parent.rl.question(question, answer)
     } else { return console.log('no Operation or Interval has been set Yet') }
 }

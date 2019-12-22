@@ -30,6 +30,7 @@ class ScreenManager {
         if(bottomContent) bottomContent = this.forceLineReturn(bottomContent,width);
 
         if(rawPromptLine.length % width === 0 ) content += '\n';
+
         let fullContent = content + (bottomContent ? '\n'+bottomContent : '' );
         this.rl.output.write(fullContent);
         
@@ -48,9 +49,8 @@ class ScreenManager {
         this.rl.output.mute();
     }
     clean(extraLines){
-        extraLines>0 
-            ? util.down(this.rl,extraLines)
-            : util.clearLine(this.rl,this.height);
+        if (extraLines > 0) { util.down(this.rl, extraLines); }
+        util.clearLine(this.rl, this.height);
     }
     done(){
         this.rl.setPrompt('>>');

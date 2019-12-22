@@ -8,6 +8,7 @@ class BaseUI {
         // opt is `this` argument of interface
         this.rl = opt.rl
         this.exEvent = opt.eventListeners()
+        this.stopProcess = opt.e
         this.rl.resume();
     }
     close(){
