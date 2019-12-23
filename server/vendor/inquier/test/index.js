@@ -14,7 +14,7 @@ inquirer
             { name: 'Bacon' },
 
             new inquirer.Separator(' = The Cheeses = '),
-            { name: 'Mozzarella', checked: true },
+            { name: 'Mozzarella'},
             { name: 'Cheddar' },
             { name: 'Parmesan' },
 

@@ -5,7 +5,7 @@ const auto_all = require('../components/start/transfer/auto/all'),
     auto_bucket = require('../components/start/transfer/auto/bucket'),
     manualTransfer = require('../components/start/transfer/manual');
 
-module.exports = (parent) => {
+module.exports = (parent,str) => {
     let all    = auto_all().initialize()
     let bucket = auto_bucket().initialize()
     let Manual = manualTransfer().initialize()
@@ -47,5 +47,5 @@ module.exports = (parent) => {
             }
         }
         parent.rl.question(question, answer)
-    } else { return console.log('no Operation or Interval has been set Yet') }
+    } else { !str ? console.log('no Operation or Interval has been set Yet') : ''}
 }

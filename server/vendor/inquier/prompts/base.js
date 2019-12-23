@@ -12,7 +12,8 @@ const cliCursor   = require('cli-cursor');
 
 let ScreenManager = require('../utils/screen-manager');
 class Prompt {
-    constructor(que,rl,e,stop,ans){ 
+    // parent is the class of main readline Handler in cli/ui/interface.js file exist
+    constructor(que,parent,ans){ 
         _.assign(this,{
             answer:ans,
             status: 'pending'
@@ -30,9 +31,8 @@ class Prompt {
         if(!this.opt.message) this.opt.message = this.opt.name + ':';
         if(Array.isArray(this.opt.choices)) this.opt.choices = new Choices(this.opt.choices,ans)
 
-        this.rl = rl;
-        this.exEvent = e
-        this.stopProcess = stop
+        this.rl = parent.rl;
+        this.parentInterface = parent
         this.screen = new ScreenManager(this.rl);
     }
 
@@ -56,9 +56,11 @@ class Prompt {
         this.screen.done();
         this.rl.prompt('');
         this.close();
-        this.exEvent
-        this.stopProcess.emit('stop')
-        //trigger external layout events 
+        this.parentInterface.eventListeners()
+        // *NOTICE: 
+        //   by specifying second argument make event to be headless response
+        //   if no process exist to be stop
+        this.parentInterface.e.emit('stop','hideResponse')
     }
     handleSubmitEvents(submit){
         let self = this;

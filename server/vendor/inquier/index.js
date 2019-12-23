@@ -27,6 +27,7 @@ inquirer.promptParent = null
 inquirer.prompt = (Q,cb)=>{
     inquirer.promptParent.e.removeAllListeners()
     return inquirer.createPromptModule(inquirer.promptParent)(Q)
+        .then(ans=>{inquirer.promptParent.eventListeners();return ans})
         .then(cb)
         .finally(_=>inquirer.promptParent.rl.prompt())
 }

@@ -6,7 +6,7 @@ const _             = require('lodash'),
     col             = require('chalk'),
     cliCursor       = require('cli-cursor'),
     fig             = require('figures'),
-    {race}      = require('rxjs'),
+    {race}          = require('rxjs'),
     {map,takeUntil,tap} = require('rxjs/operators'),
     Base            = require('./base'),
     observe         = require('../utils/events'),
@@ -78,7 +78,7 @@ class CheckBoxPrompt extends Base {
         let message = this.getQuestion();
         let bottomContent = '';
         if(!this.spaceKeyPressed){
-            message += '\n'+'[Press ' 
+            message += '\n[Press ' 
                 + col.cyan.bold('<space>')
                 + ' to select, '
                 + col.cyan.bold('<a>')
@@ -93,7 +93,6 @@ class CheckBoxPrompt extends Base {
             let indexPosition = this.opt.choices.indexOf(this.opt.choices.getChoice(this.pointer))
             message += '\n' + this.paginator.paginate(choicesStr,indexPosition,this.opt.pageSize)
         }
-
         if(error) bottomContent = col.red('>> ') + error;
 
         this.screen.render(message,bottomContent)

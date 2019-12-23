@@ -14,10 +14,18 @@
         ]
     },
         {
+            "type": "browser-preview",
+            "request": "attach",
+            "name": "Browser Preview: Attach"
+        },
+        {
             "type": "node",
             "request": "launch",
             "name": "Launch Program",
-            "program": "${workspaceFolder}\\index.js"
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "program": "${file}"
         }
     ]
 }

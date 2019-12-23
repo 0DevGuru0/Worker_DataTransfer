@@ -45,11 +45,10 @@ class ScreenManager {
         
         this.extraLinesUnderPrompt = bottomContentHeight;
         this.height = height(fullContent);
-
         this.rl.output.mute();
     }
     clean(extraLines){
-        if (extraLines > 0) { util.down(this.rl, extraLines); }
+        // if (extraLines > 0) { util.down(this.rl, extraLines); }
         util.clearLine(this.rl, this.height);
     }
     done(){

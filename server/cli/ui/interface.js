@@ -11,6 +11,10 @@ const MuteStream   = require('mute-stream'),
     ManPage        = require('./man'),
     stopPro        = require('./stop');
 
+/*
+    1/ All files inside vender/inquirer have access to all methods of this files.[by parent name in them files]
+*/
+
 class _EventsEmitter extends events{}
 class CliInterface extends BaseUI {
     constructor(props){
@@ -22,7 +26,6 @@ class CliInterface extends BaseUI {
         this.manCL    = new ManPage();
     }
     eventListeners(){
-        
         this.e.on('start',  str=>this.startCL.start(str,this))
         this.e.on('status',  _=>this.statusCl.master(this.rl));
         this.e.on('log',     _=>this.log()); 
@@ -30,9 +33,9 @@ class CliInterface extends BaseUI {
         this.e.on('health',  _=>this.healthCheck());
         this.e.on('setting', _=>this.setting());
         this.e.on('exit',    _=>this.exit());
-        this.e.on('stop',    _=>stopPro(this));
+        this.e.on('stop',    str=>stopPro(this,str));
         this.e.on('man',     _=>this.manCL.run(this.possibleCommands));
-        this.e.on('help',    _=>this.man());
+        this.e.on('help',    _=>this.manCL.run(this.possibleCommands));
         this.e.on('clear',   _=>console.clear());
     }
     init(){
@@ -80,7 +83,7 @@ class CliInterface extends BaseUI {
                     this.rl.prompt()
                 })
             }
-            if(!result) console.log('Sorry, try again'); 
+            // if(!result) console.log('Sorry, try again'); 
             this.rl.prompt()
         })
     }

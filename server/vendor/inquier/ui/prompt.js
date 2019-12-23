@@ -6,9 +6,10 @@ const _                                = require('lodash'),
     utils                              = require('../utils/utils'),
     Base                               = require('../utils/base');
 class PromptUI extends Base {
-    constructor(prompts,opt){
-        super(opt);
+    constructor(prompts,parent){
+        super(parent);
         this.prompts = prompts
+        this.rl = parent.rl
     }
     run(questions){
         this.answers = {};
@@ -67,7 +68,7 @@ class PromptUI extends Base {
     }
     fetchAnswer(question){
         let Prompt = this.prompts[question.type];
-        this.activePrompt = new Prompt(question,this.rl,this.exEvent,this.stopProcess,this.answers);
+        this.activePrompt = new Prompt(question,this.parent,this.answers);
         
         return defer(()=>from(
             this.activePrompt.run().then(answer=>({name:question.name,answer}))
