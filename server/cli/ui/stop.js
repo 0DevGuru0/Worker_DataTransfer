@@ -11,7 +11,9 @@ module.exports = (parent,str) => {
     let Manual = manualTransfer().initialize()
 
     if (all || bucket || Manual) {
-        let question = col.green("? ") + col.bold.white('Do yo really want to stop operation?') + col.gray(" [Y]Yes/[N]No");
+        let question = col.green("? ") 
+        + col.bold.white('Do yo really want to stop operation?') 
+        + col.gray(" [Y]Yes/[N]No");
         let answer = ans =>{
              let regex = /((yes)|[y])\b/gmi;
             if (regex.test(ans)) {
@@ -26,7 +28,7 @@ module.exports = (parent,str) => {
                         process.stdout.write('\n');
                         console.log(col.black.bold.bgGreen('Transfer Operation turned off.'))
                         parent.rl.prompt()
-                    })
+                    }).catch(e=>{ console.log('errorEduc') })
                 }
                 if (all) {
                     auto_all.stop().then(() => {

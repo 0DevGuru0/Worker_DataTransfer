@@ -16,8 +16,8 @@ function RedisDB(){
         host:process.env.REDIS_HOST,
         port:process.env.REDIS_PORT,
         retry_strategy: options=> {
-            if (options.error && options.error.code === 'ECONNREFUSED') { deferred.reject(new Error('[ Redis ] The server refused the connection')); }
-            if (options.total_retry_time > 1000 * 60 * 60) { deferred.reject(new Error('[ Redis ] Retry time exhausted')); }
+            if (options.error && options.error.code === 'ECONNREFUSED') { deferred.reject(`${chalk.bold.red('[ Redis ]')}The server refused the connection`); }
+            if (options.total_retry_time > 1000 * 60 * 60) { deferred.reject(`${chalk.bold.red('[ Redis ]')}Retry time exhausted`); }
             if (options.attempt > 10) { return undefined; }
             return Math.min(options.attempt * 100, 3000);
         }
@@ -51,11 +51,11 @@ function MongoDB(redis){
     });
     mongoose.connection.on('error', (err) => { 
         console.log(chalk.black.bold.bgCyan('[ MongoDB ]'),'connection failed ' + err) 
-        deferred.reject(new Error(err.message))
+        deferred.reject(err.message)
     });
     mongoose.connection.on('disconnected', () => { 
         console.log(chalk.black.bold.bgCyan('[ MongoDB ]'),'connection closed successfully') 
-        deferred.reject(new Error('connection closed'))
+        deferred.reject(chalk.black.bold.bgCyan('[ MongoDB ]'),'connection closed')
     })
   
     mongoose.Promise = global.Promise;

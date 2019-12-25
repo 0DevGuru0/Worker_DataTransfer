@@ -41,8 +41,8 @@ function FetchData(client,deferred){
                 countryState = await this.client.hgetall(`visitors:state:country:year:${Year}`)
                 cityState = await this.client.hgetall(`visitors:state:city:year:${Year}`)
             }catch(error){ 
-                console.log('Error:',error)
-                this.deferred.reject(error)
+                // console.log('Error:[visitorStateFuc]',error.message)
+                this.deferred.reject(error.message)
             }
             return{countryState,cityState}
         },
@@ -220,7 +220,7 @@ module.exports = async (client, deferred) => {
     Promise.all(container.map(el=>el.save()))
         .then(async ()=>{
             console.log(chalk.green(`[${config.logBucket}]`), 'Saved Data To Database...')
-            await deleteDataFromRedis(fetchData)
+            try{ await deleteDataFromRedis(fetchData) }catch(e){ throw new Error(e.message) }
             console.log(chalk.green(`[${config.logBucket}]`), 'Data Delete From Redis...')
             console.log(chalk.bold('-------------------------------------------------------------'))
             deferred.resolve(client)

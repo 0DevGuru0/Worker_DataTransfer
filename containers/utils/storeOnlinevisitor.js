@@ -1,6 +1,6 @@
 const moment    = require('moment'),
     _           = require('Lodash'),
-    chalk       = require('chalk'),
+    col       = require('chalk'),
     EdgeMonth   = +moment().format("MM"),
     EdgeYear    = +moment().format("YYYY"),
     Visitors    = require('../../model/visitors'),
@@ -80,18 +80,18 @@ async function prepareDataToStore(primitiveData,config){
     })
     return {midContain,delKeys}
 }
-async function storeModels(midContain,config){
+async function storeModels(midContain,deferred,config){
     let arrLength = midContain.length;
     let modelContainer = []
     let specArr = []
     if (arrLength > 0) {
-        console.log(chalk.green(`[${config.logBucket}]`), 'Saving Data To Database...')
+        console.log(col.green(`[${config.logBucket}]`), 'Saving Data To Database...')
         for (let i = 0; i < arrLength; i++) {
             let smallContain = midContain[i]
             let visitor = await Visitors.findOne({
                 Year: smallContain.Year,
                 Month: smallContain.Month
-            })
+            }).catch(e=> deferred.reject(`${col.red.bold('[ '+e.name+' ]')} [ storeOnlineVisitor.js ] ${e.message}`) )
             let visitorModel = visitor ? visitor : new Visitors({
                 Year:   +smallContain.Year,
                 Month:  +smallContain.Month,
@@ -122,15 +122,15 @@ async function deleteDataFromRedis(client,config,keys){
     try{
         console.log('DELETE::: onlineVisitors-- ',...keys)
         // reply = await client.hdel(config.redisBucket,...keys)
-        // console.log(chalk.green(`[${config.logBucket}]`),'removed from redis.')
+        // console.log(col.green(`[${config.logBucket}]`),'removed from redis.')
     }catch(err){
-        console.log( chalk.green(`[${config.logBucket}]`), chalk.white.bgRed("[ERROR]"), err.message)
+        console.log( col.green(`[${config.logBucket}]`), col.white.bgRed("[ERROR]"), err.message)
     }
     if(reply===0 ){
         return{ErrRedis:'Couldn\'t Delete Data From Redis' } 
     }else{
-        console.log(chalk.green(`[${config.logBucket}]`),'Data Delete From Redis...')
-        console.log(chalk.bold('-------------------------------------------------------------'))
+        console.log(col.green(`[${config.logBucket}]`),'Data Delete From Redis...')
+        console.log(col.bold('-------------------------------------------------------------'))
         return {ErrRedis:null}
     }
 }
@@ -144,20 +144,20 @@ module.exports = async (client, deferred) => {
     }
     let primitiveData   = await fetchDataFromRedis(client,deferred,config)
     if (!primitiveData) {
-        console.log(chalk.red(`[${config.logBucket}][Redis]`), "Nothing Exist To Store.")
-        console.log(chalk.bold('-------------------------------------------------------------'))
+        console.log(col.red(`[${config.logBucket}][Redis]`), "Nothing Exist To Store.")
+        console.log(col.bold('-------------------------------------------------------------'))
         return deferred.resolve(client)
     }
     let {midContain,delKeys} = await prepareDataToStore(primitiveData,config)
-    let modelContainer  = await storeModels(midContain,config)
+    let modelContainer  = await storeModels(midContain,deferred,config)
     Promise.all(modelContainer.map(el => el.save()))
         .then(async () => {
-            console.log(chalk.green(`[${config.logBucket}]`), 'Saved Data To Database...')
+            console.log(col.green(`[${config.logBucket}]`), 'Saved Data To Database...')
             
             let {ErrRedis} = await deleteDataFromRedis(client,config,delKeys)
             if(ErrRedis){
-                console.log(chalk.red(`[${config.logBucket}][Redis]`),ErrRedis)
-                console.log(chalk.bold('-------------------------------------------------------------'))
+                console.log(col.red(`[${config.logBucket}][Redis]`),ErrRedis)
+                console.log(col.bold('-------------------------------------------------------------'))
                 return config.deferred.resolve(config.client)   
             }
             deferred.resolve(client)

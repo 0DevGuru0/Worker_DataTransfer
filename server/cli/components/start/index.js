@@ -87,12 +87,11 @@ class StartComponent extends BaseUI {
     master(){
         let question = _.concat(this.QA_transferMethod,this.QA_transferBucket)
         let callback = answers => {
-            console.log(answers)
-            // return answers.transferMethod === 'manual' 
-            //     ? this.manual()
-            //     : answers.transferBucket === 'all' 
-            //         ? this.autoAll()
-            //         : this.autoBucket() ; 
+            return answers.transferMethod === 'manual' 
+                ? this.manual()
+                : answers.transferBucket === 'all' 
+                    ? this.autoAll()
+                    : this.autoBucket() ; 
         }
         return ask.prompt(question,callback)
     }

@@ -12,7 +12,6 @@ module.exports=(inter)=>{
     this.allUsers = Object.keys(usersCont)
     return{
         start:(bucket)=>{
-            console.log('\n')
            let DBTransfer = (redis)=>{
                 let client      = asyncRedis.decorate(redis);
                 let deferred    = Q.defer();
@@ -56,7 +55,8 @@ module.exports=(inter)=>{
                 .catch(async reason=>{
                     let reply;
                     try{ reply = await client.hget('transferStatics','manual') }
-                    catch(e){ console.log(e) }
+                    //TODO:
+                    catch(e){ console.log('[transfer/manual]',e.message) }
                     reply = reply ? JSON.parse(reply): {};
                     reply[time] = 'fail'
                     await client.hset('transferStatics','manual',JSON.stringify(reply))

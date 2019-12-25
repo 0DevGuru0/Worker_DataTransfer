@@ -83,7 +83,6 @@ class CliInterface extends BaseUI {
                     this.rl.prompt()
                 })
             }
-            // if(!result) console.log('Sorry, try again'); 
             this.rl.prompt()
         })
     }
