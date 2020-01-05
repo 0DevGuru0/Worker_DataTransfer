@@ -3,7 +3,7 @@ const clc = require("chalk"),
   _ = require("lodash");
 const { MongoDB, RedisDB } = require("../../../../database");
 const { ManualTransfer } = require("../../../../containers/transfer");
-module.exports = inter => {
+module.exports = parent => {
   return {
     start: bucket => {
       return RedisDB()
@@ -16,11 +16,9 @@ module.exports = inter => {
           deferred.resolve(redis);
           return deferred.promise;
         })
-        .then(redis => ManualTransfer(redis, bucket, inter))
+        .then(redis => ManualTransfer(redis, bucket, parent))
         .then(initialize => (this.initialize = initialize))
-        .catch(reason =>
-          console.log(clc.green("[Server]"), clc.white.bgRed("[ERROR]"), reason)
-        );
+        .catch(reason => console.log(clc.green("[Server]"), clc.white.bgRed("[ERROR]"), reason) );
     },
     initialize: () => (this.initialize ? true : false),
     stop: () => {

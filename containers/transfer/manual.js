@@ -5,7 +5,7 @@ const moment = require("moment");
 const { ui } = require("../../helpers");
 const asyncRedis = require("async-redis");
 const { usersCont, visitorsCont } = require("../handler");
-module.exports = (redis, bucket, inter) => {
+module.exports = (redis, bucket, parent) => {
   let initialize = true;
   let buckets = Object.assign({}, usersCont, visitorsCont);
   let _allVisi = Object.keys(visitorsCont);
@@ -36,7 +36,6 @@ module.exports = (redis, bucket, inter) => {
     "Start To Transfer..."
   );
   Arr.push(buckets[firstBucket](client));
-  // Arr.push(this.buckets[firstBucket](redis))
   _.forEach(bucket, elem => {
     let arrLength = Arr.length - 1;
     let currentBucket = buckets[elem];
@@ -65,9 +64,10 @@ module.exports = (redis, bucket, inter) => {
         throw new Error(e.message);
       }
       initialize = false;
-      inter.prompt();
+      parent.prompt();
     })
     .catch(async reason => {
+      console.log('main',reason)
       let reply;
       try {
         reply = await client.hget("transferStatics", "manual");

@@ -1,5 +1,5 @@
 module.exports = {
-    storeFunc: require('./storeFunc'),
+    storeFunc: require('./storeOnlineVisitor'),
     pageViewsStore: require('./pageViewsFunc'),
     visitorsState: require('./visitorsStateFunc')
 }
