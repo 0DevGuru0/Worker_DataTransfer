@@ -2,7 +2,6 @@ const onlineUsersCount  = require("../../../database/model/users/onlineCount"),
     totalUsersCount     = require("../../../database/model/users/totalUsersCount"),
     totalVerifiedUsers  = require("../../../database/model/users/totalVerifiedUsers"),
     Users               = require("../../../database/model/users"),
-
     chalk     = require('chalk'),
     moment    = require("moment"),
     EdgeMonth = +moment().format("MM"),
@@ -52,6 +51,7 @@ function FetchData(config){
         }
     }
 }
+
 async function prepareData(fetchData,config){
     let reply = await fetchData.getDataFromRedis(config.redisBucket);
     if(!reply) return {Err:`Nothing Exist In ${config.redisBucket} To Store.`}

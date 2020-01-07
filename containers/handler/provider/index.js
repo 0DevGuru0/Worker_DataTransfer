@@ -1,5 +1,6 @@
 module.exports = {
-    storeFunc: require('./storeOnlineVisitor'),
-    pageViewsStore: require('./pageViewsFunc'),
-    visitorsState: require('./visitorsStateFunc')
+    onlineVisitorsStore: require('./onlineVisitorsStore'),
+    pageViewsStore: require('./pageViewsStore'),
+    visitorsStateStore: require('./visitorsStateStore'),
+    usersStore: require('./usersStore')
 }

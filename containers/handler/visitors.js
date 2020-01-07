@@ -1,7 +1,7 @@
 const Q = require("q"),
   chalk = require("chalk");
 
-const { pageViewsStore, storeFunc, visitorsState } = require("./provider");
+const { pageViewsStore, onlineVisitorsStore, visitorsStateStore } = require("./provider");
 const {ui} = require('../../helpers')
 
 const container = {
@@ -14,7 +14,7 @@ const container = {
       countBox: "onlineCount",
       countBox2: "totalVisit"
     };
-    storeFunc(client, config)
+    onlineVisitorsStore({client, config})
       .then(_ => deferred.resolve(client))
       .catch(deferred.reject);
     return deferred.promise;
@@ -25,7 +25,7 @@ const container = {
       collectionName: "pageViews",
       logBucket: "pageViews"
     };
-    pageViewsStore(client, config)
+    pageViewsStore({client, config})
       .then(_ => deferred.resolve(client))
       .catch(deferred.reject);
     return deferred.promise;
@@ -33,7 +33,7 @@ const container = {
   visitorsState: client => {
     var deferred = Q.defer();
     let config = { logBucket: "visitorsState" };
-    visitorsState({client, config})
+    visitorsStateStore({client, config})
     .then(_ => deferred.resolve(client))
     .catch(deferred.reject);
 

@@ -1,36 +1,7 @@
-const { Schema, model } = require("mongoose");
+module.exports = {
+    Users:require('./main'),
+    totalUsersCount:require('./totalUsersCount'),
+    totalVerifiedUsersCount:require('./totalVerifiedUsersCount'),
+    onlineUsersCount: require('./onlineCount')
 
-const Users = new Schema({
-  Year: {
-    type: Number,
-    required: true,
-    index: {
-      sparse: true,
-      background: true
-    }
-  },
-  Month: {
-    type: Number,
-    unique: true,
-    required: true
-  },
-  onlineCount: [
-    {
-      type: Schema.Types.ObjectId,
-      ref: "onlineUsersCount"
-    }
-  ],
-  totalUsers: [
-    {
-      type: Schema.Types.ObjectId,
-      ref: "totalUsersCount"
-    }
-  ],
-  totalVerifiedUsers: [
-    {
-      type: Schema.Types.ObjectId,
-      ref: "totalVerifiedUsers"
-    }
-  ]
-});
-module.exports = model("Users", Users);
+}

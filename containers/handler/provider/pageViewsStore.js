@@ -2,12 +2,10 @@ const moment = require("moment"),
   Q = require("q"),
   _ = require("lodash"),
   col = require("chalk"),
-  pageViews = require("../../../database/model/visitors/pageViews"),
-  Visitors = require("../../../database/model/visitors"),
-  EdgeYear = +moment().format("YYYY"),
-  { ui } = require("../../../helpers"),
-  EdgeMonth = +moment().format("MM");
-
+  { Spinner } = require("clui"),
+  {PageViews,Visitors} = require("../../../database/model/visitors"),
+  { ui } = require("../../../helpers");
+  const loading = msg =>new Spinner(msg, ["⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"]);
 const errorModel = (logBucket, section, message) =>
   _.join(
     [
@@ -91,16 +89,14 @@ const prepareDataToStore = async ({ reply, config, client }) => {
   };
   let delKeys = [];
   _.forIn(container, (value, key) => {
-    let contain = key.split("/");
-    let objYear = +contain[0];
-    let objMonth = +contain[1];
-    if (objYear <= EdgeYear && objMonth < EdgeMonth) {
+    if (moment(key, "YYYY/MM/DD").isBefore(moment(), "month")) {
+      let contain = key.split("/");
       delKeys.push(key);
       if (midContain.length === 0) {
         midContain.push(TempObj(contain, container, key, config));
       } else {
         let elem = midContain[midContain.length - 1];
-        if (elem.Year === objYear && elem.Month === objMonth) {
+        if (elem.Year === +contain[0] && elem.Month === +contain[1]) {
           elem[config.collectionName].push(
             TempObj_small(contain, container, key)
           );
@@ -146,7 +142,7 @@ const storeModels = async ({ config, client, midContain, delKeys }) => {
     if (smallArrLength > 0) {
       for (let i = 0; i < smallArrLength; i++) {
         let { Day, Detail, DateVisi } = specificCollection[i];
-        const model = await new pageViews({ Day, Detail, DateVisi });
+        const model = await new PageViews({ Day, Detail, DateVisi });
         pageViewsModel.push(model);
       }
     }
@@ -199,38 +195,40 @@ const deleteDataFromRedisDB = ({ client, delKeys, config }) => {
   return deferred.promise;
 };
 
-module.exports = (client, config) => {
+module.exports = ({client, config}) => {
   let deferred = Q.defer();
+  let load1 = loading(`${col.red(`[${config.logBucket}]`)} preparing Data for saving into the Database...`)
+  let load2 = loading(`${col.red(`[${config.logBucket}]`)} Saving Data To Database...`)
+  let load3 = loading(`${col.red(`[${config.logBucket}]`)} Deleting From RedisDB...`)
   Q({ client, config })
+    .tap(()=>load1.start())
     .then(fetchDataFromRedis)
-    .tap(() =>
-      console.log(
-        col.green(`[${config.logBucket}]`),
-        "Saving Data To Database..."
-      )
-    )
+    .tap(() => {
+      load1.stop();
+      console.log(col.green(`${fig.tick} [${config.logBucket}]`),'Prepared Data For Saving Into The Database...')
+      load2.start()
+    })
     .then(storeDataToMongoDB)
-    .tap(() =>
-      console.log(
-        col.green(`[${config.logBucket}]`),
-        "Saved Data To Database..."
-      )
-    )
+    .tap(() => {
+      load2.stop();
+      console.log(col.green(`${fig.tick} [${config.logBucket}]`), 'Saved Data To Database...');
+      load3.start()
+    })
     .then(deleteDataFromRedisDB)
-    .tap(() =>
+    .tap(() =>{
+      load3.stop()
       console.log(
-        _.join(
-          [
-            col.green(`[${config.logBucket}]`),
-            " Data Delete From Redis...\n",
-            ui.horizontalLine
-          ],
-          ""
-        )
-      )
-    )
+        _.join([col.green(`${fig.tick} [${config.logBucket}]`),
+        ' Data Deleted From Redis...\n',
+        ui.horizontalLine], '')
+      );
+    })
     .then(deferred.resolve)
-    .catch(deferred.reject);
-
+    .catch(err=>{
+        load3.stop()
+        load1.stop()
+        load2.stop()
+        deferred.reject(err)
+    });
   return deferred.promise;
 };

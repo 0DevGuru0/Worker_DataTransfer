@@ -1,6 +1,5 @@
 const clc = require("chalk"),
-  Q = require("q"),
-  _ = require("lodash");
+  Q = require("q");
 const { MongoDB, RedisDB } = require("../../../../database");
 const { ManualTransfer } = require("../../../../containers/transfer");
 module.exports = parent => {
@@ -16,9 +15,18 @@ module.exports = parent => {
           deferred.resolve(redis);
           return deferred.promise;
         })
-        .then(redis => ManualTransfer(redis, bucket, parent))
-        .then(initialize => (this.initialize = initialize))
-        .catch(reason => console.log(clc.green("[Server]"), clc.white.bgRed("[ERROR]"), reason) );
+        .then(redis => ManualTransfer(redis, bucket))
+        .catch(reason => {
+          console.log(
+            clc.green("[Server]"),
+            clc.white.bgRed("[ERROR]"),
+            reason
+          );
+        })
+        .finally(() => {
+          this.initialize = false;
+          parent.prompt();
+        });
     },
     initialize: () => (this.initialize ? true : false),
     stop: () => {

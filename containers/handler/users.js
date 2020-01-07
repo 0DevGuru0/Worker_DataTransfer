@@ -1,48 +1,43 @@
 const Q = require("q");
 const chalk = require("chalk");
-const Users = require("../../database/model/users");
-const storeFunction = require("./provider/storeFunc");
-// Users.on("index", err => {
-//   err
-//     ?console.error(chalk.black.bold.bgYellow('[ Users_MongoDB ]'),"Users index error: %s", err)
-//     :console.info(chalk.black.bold.bgYellow('[ Users_MongoDB ]'),"Users indexing complete");
-// });
+const {usersStore} = require("./provider");
+const {ui} = require('../../helpers')
 
 const container = {
   onlineUsersList: client => {
     var deferred = Q.defer();
     let config = {
-      client,
-      deferred,
       redisBucket: "online:users:TList",
       logBucket: "onlineUsersList",
       collectionName: "onlineCount"
     };
-    storeFunction(config);
+    usersStore({config,client})      
+      .then(_ => deferred.resolve(client))
+      .catch(deferred.reject);
     return deferred.promise;
   },
   totalUsersVerified: client => {
     var deferred = Q.defer();
     let config = {
-      client,
-      deferred,
       redisBucket: "total:Verified:UserList",
       logBucket: "totalUsersVerified",
       collectionName: "totalVerifiedUsers"
     };
-    storeFunction(config);
+    usersStore({config,client})      
+      .then(_ => deferred.resolve(client))
+      .catch(deferred.reject);
     return deferred.promise;
   },
   totalUsersList: client => {
     var deferred = Q.defer();
     let config = {
-      client,
-      deferred,
       redisBucket: "total:users:TList",
       logBucket: "totalUsersList",
       collectionName: "totalUsers"
     };
-    storeFunction(config);
+    usersStore({config,client})      
+      .then(_ => deferred.resolve(client))
+      .catch(deferred.reject);
     return deferred.promise;
   }
 };
@@ -50,12 +45,8 @@ const container = {
 module.exports = {
   usersCont: container,
   usersWorker: client => {
-    var deferred = Q.defer();
-    console.log(
-      chalk.bold(
-        "-------------------------------------------------------------"
-      )
-    );
+    let deferred = Q.defer();
+    console.log(ui.horizontalLine);
     let main = container.onlineUsersList(client);
     let main1 = main.then(container.totalUsersList);
     main1
@@ -70,7 +61,7 @@ module.exports = {
       })
       .catch(reason =>
         console.log(
-          chalk.green("[DataTransfer]"),
+          chalk.green("MAIN[DataTransfer]"),
           chalk.white.bgRed("[ERROR]"),
           reason
         )

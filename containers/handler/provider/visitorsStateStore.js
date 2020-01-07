@@ -5,10 +5,8 @@ const moment = require("moment"),
   {ui}=require('../../../helpers'),
   col = require("chalk"),
   fig = require('figures'),
-  MainState = require("../../../database/model/visitors/visitorsState"),
-  MonthState = require("../../../database/model/visitors/monthsVisitorsState"),
-  DayState = require("../../../database/model/visitors/daysDetailState"),
-  Visitors = require("../../../database/model/visitors");
+  {MainState,MonthState,DayState,Visitors}=require('../../../database/model/visitors');
+
 const loading = msg=>new Spinner( msg, ['⣾', '⣽', '⣻', '⢿', '⡿', '⣟', '⣯', '⣷'] );
 
 const errorModel = (logBucket,section,message)=>_.join([
@@ -313,6 +311,11 @@ module.exports = ({client, config}) => {
         );
       })
     .then(deferred.resolve)
-    .catch(deferred.reject);
-    return deferred.promise;
+    .catch(err=>{
+      load3.stop()
+      load1.stop()
+      load2.stop()
+      deferred.reject(err)
+  });
+  return deferred.promise;
 }
