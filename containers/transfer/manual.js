@@ -2,20 +2,11 @@ const col = require("chalk");
 const Q = require("q");
 const _ = require("lodash");
 const moment = require("moment");
-const { ui } = require("../../helpers");
+const { ui,errorModel } = require("../../helpers");
 const asyncRedis = require("async-redis");
 const { usersCont, visitorsCont } = require("../handler");
 let time = moment().format("dddd, MMMM Do YYYY, h:mm a");
-const errorModel = (logBucket, section, message) =>
-  _.join(
-    [
-      col.green("[" + logBucket + "]"),
-      col.white.bgRed("[ERROR]"),
-      col.bold.red("[" + section + "]"),
-      col.bold(message)
-    ],
-    " "
-  );
+
 function FetchData(client) {
   this.client = client;
   this.bucket = "transferStatics";
@@ -90,25 +81,24 @@ const saveFunction = ({ fetch, Arr, staticsBucket }) => {
   let deferred = Q.defer();
   Arr[0]
     .then(async () => {
-      console.log(
-        col.bold.bgGreen.white(
-          " Congratulation!!! Users Data Transferring to MongoDB is successfully done.."
-        )
-      );
+      // console.log(
+      //   col.bold.bgGreen.white(
+      //     " Congratulation!!! Users Data Transferring to MongoDB is successfully done.."
+      //   )
+      // );
       try {
         let reply = await fetch.getTransferStaticsData();
         reply[time] = staticsBucket.split(":");
         await fetch.setTransferStaticsData(reply);
-      } catch (e) {
-        throw new Error(e);
+      } catch (err) {
+        deferred.reject(
+          errorModel("ManualTransfer", "StoreTransferStatics", err)
+        );
       }
       deferred.resolve();
     })
     .catch(async reason => {
-      if (reason)
-        deferred.reject(
-          errorModel("ManualTransfer", "StoreTransferStatics", err)
-        );
+      if (reason) deferred.reject(reason);
       try {
         let reply = await fetch.getTransferStaticsData();
         reply[time] = "fail";
@@ -123,6 +113,14 @@ const saveFunction = ({ fetch, Arr, staticsBucket }) => {
 };
 
 module.exports = (redis, bucket) => {
+  let deferred = Q.defer()
   let client = asyncRedis.decorate(redis);
-  return Q({ fetch: FetchData(client), bucket, initialize: true, client }).then(store)
+  // store({ fetch: FetchData(client), bucket, initialize: true, client })
+  // .then(deferred.resolve)
+  // .catch(deferred.reject(err))
+  Q({ fetch: FetchData(client), bucket, initialize: true, client })
+  .then(store)
+  .then(deferred.resolve)
+  .catch(deferred.reject)
+  return deferred.promise;
 };

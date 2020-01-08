@@ -1,20 +1,10 @@
 const moment = require("moment"),
   _ = require("lodash"),
   Q = require('q'),
-  { Spinner } = require('clui'),
-  {ui}=require('../../../helpers'),
+  { ui,loading,errorModel } = require("../../../helpers");
   col = require("chalk"),
   fig = require('figures'),
   {MainState,MonthState,DayState,Visitors}=require('../../../database/model/visitors');
-
-const loading = msg=>new Spinner( msg, ['⣾', '⣽', '⣻', '⢿', '⡿', '⣟', '⣯', '⣷'] );
-
-const errorModel = (logBucket,section,message)=>_.join([
-    col.green('['+logBucket+']'),
-    col.white.bgRed("[ERROR]"),
-    col.bold.red('['+section+']'),
-    col.bold(message)
-],' ')
 
 const cityConverter=(cityContainer)=>_.transform( cityContainer, (result, cities, country) =>
     _.forIn(

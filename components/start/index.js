@@ -105,9 +105,9 @@ class StartComponent extends BaseUI {
     return ask.prompt(question, callback);
   }
   startHelp() {
-    this.horizontalLine(74);
-    this.centered(clc.cyan.bold("Start"), 83);
-    this.horizontalLine(74);
+    this.horizontalLine()
+    this.centered(clc.cyan.bold("Start"));
+    this.horizontalLine()
     process.stdout.write(
       clc.bold.green("Usage") +
         ":\n" +
@@ -121,7 +121,7 @@ class StartComponent extends BaseUI {
         "\t\tStore Redis data to Mongodb" +
         "\n\t\t& don't delete data from Redis\n"
     );
-    this.horizontalLine(74);
+    this.horizontalLine()
   }
 }
 

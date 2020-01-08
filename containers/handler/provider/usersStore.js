@@ -8,22 +8,9 @@ const {
   _ = require("lodash"),
   col = require("chalk"),
   { Spinner } = require("clui"),
-  { ui } = require("../../../helpers"),
+  { ui,loading,errorModel } = require("../../../helpers");
   fig = require("figures"),
   moment = require("moment");
-
-const loading = msg =>new Spinner(msg, ["⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"]);
-
-const errorModel = (logBucket, section, message) =>
-  _.join(
-    [
-      col.green("[" + logBucket + "]"),
-      col.white.bgRed("[ERROR]"),
-      col.bold.red("[" + section + "]"),
-      col.bold(message)
-    ],
-    " "
-  );
 function FetchData({ config, client }) {
   this.client = client;
   this.redisBucket = config.redisBucket;

@@ -2,21 +2,8 @@ const moment = require("moment"),
   Q = require("q"),
   _ = require("lodash"),
   col = require("chalk"),
-  { Spinner } = require("clui"),
   {PageViews,Visitors} = require("../../../database/model/visitors"),
-  { ui } = require("../../../helpers");
-  const loading = msg =>new Spinner(msg, ["⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"]);
-const errorModel = (logBucket, section, message) =>
-  _.join(
-    [
-      col.green("[" + logBucket + "]"),
-      col.white.bgRed("[ERROR]"),
-      col.bold.red("[" + section + "]"),
-      col.bold(message)
-    ],
-    " "
-  );
-
+  { ui,loading,errorModel } = require("../../../helpers");
 const fetchDataFromRedis = ({ client, config }) => {
   let deferred = Q.defer();
   client

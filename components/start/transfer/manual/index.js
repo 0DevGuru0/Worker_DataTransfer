@@ -2,7 +2,22 @@ const clc = require("chalk"),
   Q = require("q");
 const { MongoDB, RedisDB } = require("../../../../database");
 const { ManualTransfer } = require("../../../../containers/transfer");
+const {ui} = require('../../../../helpers')
 module.exports = parent => {
+  this.stop = () => {
+    let deferred = Q.defer();
+    this.mongooseDB.connection
+      .close()
+      .then(() => {
+        this.redisDB.quit(() => {
+          console.log( clc.white.bold.bgMagentaBright("[ Redis ]"), "connection closed successfully" );
+          this.initialize = false;
+          deferred.resolve();
+        });
+      })
+      .catch(e => console.log("stop forced error"));
+    return deferred.promise;
+  };
   return {
     start: bucket => {
       return RedisDB()
@@ -16,29 +31,20 @@ module.exports = parent => {
           return deferred.promise;
         })
         .then(redis => ManualTransfer(redis, bucket))
-        .catch(reason => {
-          console.log(
-            clc.green("[Server]"),
-            clc.white.bgRed("[ERROR]"),
-            reason
-          );
-        })
-        .finally(() => {
-          this.initialize = false;
-          parent.prompt();
-        });
+        .catch(console.log)
+        .finally(async ()=>{ 
+          console.log(ui.horizontalLine)
+          await this.stop()
+         })
     },
     initialize: () => (this.initialize ? true : false),
-    stop: () => {
+    stop:() => {
       let deferred = Q.defer();
       this.mongooseDB.connection
         .close()
         .then(() => {
           this.redisDB.quit(() => {
-            console.log(
-              clc.white.bold.bgMagentaBright("[ Redis ]"),
-              "connection closed successfully"
-            );
+            console.log( clc.white.bold.bgMagentaBright("[ Redis ]"), "connection closed successfully" );
             this.initialize = false;
             deferred.resolve();
           });
@@ -46,5 +52,5 @@ module.exports = parent => {
         .catch(e => console.log("stop forced error"));
       return deferred.promise;
     }
-  };
+  }
 };

@@ -2,16 +2,8 @@ const moment = require('moment'),
     Q = require('q'),
     _ = require('Lodash'),
     col = require('chalk'),
-    { Spinner } = require("clui"),
     {Visitors,onlineVisitorsList} = require('../../../database/model/visitors'),
-    { ui } = require('../../../helpers');
-const loading = msg =>new Spinner(msg, ["⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"]);
-const errorModel = (logBucket,section,message)=>_.join([
-    col.green('['+logBucket+']'),
-    col.white.bgRed("[ERROR]"),
-    col.bold.red('['+section+']'),
-    col.bold(message)
-],' ')
+    { ui,errorModel,loading } = require('../../../helpers');
 
 const fetchDataFromRedis = ({ client, config }) => {
     let deferred = Q.defer();
@@ -44,7 +36,6 @@ const fetchDataFromRedis = ({ client, config }) => {
         })
     return deferred.promise;
 }
-
 const prepareDataToStore = ({ primitiveData, config }) => {
     let midContain = []
     let TempObj_small = (contain, reply, el) => {
@@ -95,7 +86,6 @@ const prepareDataToStore = ({ primitiveData, config }) => {
     })
     return { midContain, delKeys }
 }
-
 const storeModels = ({ midContain, config, delKeys, client }) => {
     let deferred = Q.defer()
     let arrLength = midContain.length;
@@ -149,7 +139,7 @@ const deleteDataFromRedisDB = ({ client, config, delKeys }) => {
     client.hdel(config.redisBucket, ...delKeys)
         .then(reply => {
             console.log('DELETE::: onlineVisitors-- ', ...delKeys) //TODO: TEST <uncomment>
-            if(reply===0) throw new Error(' Couldn\'t Delete Data From Redis ')
+            if(reply===0) throw new Error('Couldn\'t Delete Data From Redis ')
             return deferred.resolve()
         })
         .catch(err => deferred.reject(errorModel(config.logBucket,'deleteDataFromRedisDB',err)))
