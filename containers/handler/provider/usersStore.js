@@ -215,8 +215,7 @@ module.exports = ({ client, config }) => {
     .then(deleteDataFromRedisDB)
     .tap(() => {
       load3.stop();
-      console.log( _.join( [ initiate, " Data Deleted From Redis...\n", ui.horizontalLine ], "" )
-      );
+      console.log(`${initiate} Data Deleted From Redis...`)
     })
     .then(deferred.resolve)
     .catch(err=>{

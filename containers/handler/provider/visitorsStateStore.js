@@ -296,8 +296,7 @@ module.exports = ({client, config}) => {
         load3.stop()
         console.log(
           _.join([col.green(`${fig.tick} [${config.logBucket}]`),
-          ' Data Deleted From Redis...\n',
-          ui.horizontalLine], '')
+          ' Data Deleted From Redis...'], '')
         );
       })
     .then(deferred.resolve)

@@ -1,4 +1,4 @@
-const clc = require("chalk"),
+const col = require("chalk"),
   Q = require("q");
 const { MongoDB, RedisDB } = require("../../../../database");
 const { ManualTransfer } = require("../../../../containers/transfer");
@@ -10,14 +10,16 @@ module.exports = parent => {
       .close()
       .then(() => {
         this.redisDB.quit(() => {
-          console.log( clc.white.bold.bgMagentaBright("[ Redis ]"), "connection closed successfully" );
+          console.log( col.white.bold.bgMagentaBright("[ Redis ]"), "connection closed successfully" );
+          console.log( col.black.bold.bgCyan("[ MongoDB ]"), "connection disconnected successfully" );
           this.initialize = false;
           deferred.resolve();
         });
       })
-      .catch(e => console.log("stop forced error"));
+      .catch(deferred.reject);
     return deferred.promise;
   };
+  
   return {
     start: bucket => {
       return RedisDB()
@@ -34,7 +36,7 @@ module.exports = parent => {
         .catch(console.log)
         .finally(async ()=>{ 
           console.log(ui.horizontalLine)
-          await this.stop()
+          if(this.mongooseDB.connection.readyState == 1) await this.stop() 
          })
     },
     initialize: () => (this.initialize ? true : false),
@@ -44,7 +46,8 @@ module.exports = parent => {
         .close()
         .then(() => {
           this.redisDB.quit(() => {
-            console.log( clc.white.bold.bgMagentaBright("[ Redis ]"), "connection closed successfully" );
+            console.log( col.white.bold.bgMagentaBright("[ Redis ]"), "connection closed successfully" );
+            console.log( col.black.bold.bgCyan("[ MongoDB ]"), "connection disconnected successfully" );
             this.initialize = false;
             deferred.resolve();
           });

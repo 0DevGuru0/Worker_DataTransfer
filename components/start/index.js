@@ -71,7 +71,7 @@ class StartComponent extends BaseUI {
     if (container[1] === "transfer" && container.length === 2)
       return this.master();
     container.shift();
-    return process.stdout.write(
+    return console.log(
       clc.bold.black.bgYellow("[ DataTransfer ]"),
       `'${container.join(" ")}' is not a correct command. See 'start --help'.`
     );

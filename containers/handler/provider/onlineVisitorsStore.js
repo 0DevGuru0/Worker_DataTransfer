@@ -86,7 +86,7 @@ const prepareDataToStore = ({ primitiveData, config }) => {
     })
     return { midContain, delKeys }
 }
-const storeModels = ({ midContain, config, delKeys, client }) => {
+const storeModels = async({ midContain, config, delKeys, client }) => {
     let deferred = Q.defer()
     let arrLength = midContain.length;
     let modelContainer = []
@@ -98,8 +98,7 @@ const storeModels = ({ midContain, config, delKeys, client }) => {
     ))
     for (let i = 0; i < arrLength; i++) {
         let smallContain = midContain[i]
-
-        Visitors.findOne({ Year: smallContain.Year, Month: smallContain.Month })
+       await Visitors.findOne({ Year: smallContain.Year, Month: smallContain.Month })
             .then(visitor => {
                 let visitorModel = visitor ? visitor : new Visitors({
                     Year: +smallContain.Year,
@@ -136,13 +135,14 @@ const storeDataToMongoDB = Q.fbind(({ primitiveData, config, client }) => storeM
 }))
 const deleteDataFromRedisDB = ({ client, config, delKeys }) => {
     let deferred = Q.defer();
-    client.hdel(config.redisBucket, ...delKeys)
-        .then(reply => {
-            console.log('DELETE::: onlineVisitors-- ', ...delKeys) //TODO: TEST <uncomment>
-            if(reply===0) throw new Error('Couldn\'t Delete Data From Redis ')
-            return deferred.resolve()
-        })
-        .catch(err => deferred.reject(errorModel(config.logBucket,'deleteDataFromRedisDB',err)))
+    console.log('DELETE::: onlineVisitors-- ', ...delKeys) //TODO: TEST <delete>
+    deferred.resolve()//TODO: TEST <delete>
+    // client.hdel(config.redisBucket, ...delKeys)
+    //     .then(reply => {
+    //         if(reply===0) throw new Error('Couldn\'t Delete Data From Redis ')
+    //         return deferred.resolve()
+    //     })
+    //     .catch(err => deferred.reject(errorModel(config.logBucket,'deleteDataFromRedisDB',err)))
     return deferred.promise;
 }
 
@@ -163,13 +163,13 @@ module.exports = ({client, config}) => {
             load2.stop();
             console.log(col.green(`${fig.tick} [${config.logBucket}]`), 'Saved Data To Database...');
             load3.start()
-        }).then(deleteDataFromRedisDB)
+        })
+        .then(deleteDataFromRedisDB)
         .tap(() => {
             load3.stop()
             console.log(
                 _.join([col.green(`${fig.tick} [${config.logBucket}]`),
-                    ' Data Deleted From Redis...\n',
-                ui.horizontalLine], '')
+                    ' Data Deleted From Redis...'], '')
             );
         })
         .then(deferred.resolve)

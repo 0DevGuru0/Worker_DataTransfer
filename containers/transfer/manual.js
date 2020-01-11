@@ -115,9 +115,6 @@ const saveFunction = ({ fetch, Arr, staticsBucket }) => {
 module.exports = (redis, bucket) => {
   let deferred = Q.defer()
   let client = asyncRedis.decorate(redis);
-  // store({ fetch: FetchData(client), bucket, initialize: true, client })
-  // .then(deferred.resolve)
-  // .catch(deferred.reject(err))
   Q({ fetch: FetchData(client), bucket, initialize: true, client })
   .then(store)
   .then(deferred.resolve)
