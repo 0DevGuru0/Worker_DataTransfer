@@ -19,10 +19,7 @@ module.exports = redis => {
     mongoose.connection.db.stats((err, stats) => {
       deferred.resolve({ redis, mongoose, stats });
     });  
-  }).catch(()=>{
-      console.log( chalk.black.bold.bgRed("[ MongoDB ]"), "connection failed " + err );
-    deferred.reject(err.message);
-  })
+  }).catch(err=>deferred.reject(chalk.bold.red("[ Mongo ] ")+err))
   mongoose.Promise = global.Promise;
   // mongoose.set('debug', true);
   return deferred.promise;

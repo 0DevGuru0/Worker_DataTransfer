@@ -1,40 +1,35 @@
-const clc = require("chalk");
-const Q = require("q");
+const clc = require( "chalk" );
+const Q = require( "q" );
 
-const { MongoDB, RedisDB } = require("../../../../database");
-const { autoManualTransfer } = require("../../../../containers/transfer");
+const { connectToDBs } = require( "../../../../database" );
+const { autoManualTransfer } = require( "../../../../containers/transfer" );
+
 module.exports = () => {
   return {
-    start: (bucket, transferPeriod) => {
-      return RedisDB()
-        .then(MongoDB)
-        .then(({ redis, mongoose }) => {
-          let deferred = Q.defer();
-          this.mongooseDB = mongoose;
-          this.redisDB = redis;
-          deferred.resolve(redis);
-          return deferred.promise;
-        })
-        .then(redis => autoManualTransfer(redis, bucket, transferPeriod))
-        .then(interval => (this.interval = interval))
-        .catch(reason =>
-          console.log(clc.green("[Server]"), clc.white.bgRed("[ERROR]"), reason)
-        );
-    },
-    initialize: () => (this.interval ? true : false),
+    start: ( bucket, transferPeriod ) => connectToDBs().tap( ( { mongoose, redis } ) => {
+        this.mongooseDB = mongoose;
+        this.redisDB = redis;
+        this.initialize = true;
+      })
+      .then( ( { redis } ) => autoManualTransfer( redis, bucket, transferPeriod ) )
+      .then( interval => ( this.interval = interval ) )
+      .catch( err => console.log(err instanceof Object ? err.message : err))
+
+    ,initialize: () => ( this.interval ? true : false ),
+    
     stop: () => {
       let deferred = Q.defer();
-      clearInterval(this.interval);
-      this.mongooseDB.connection.close().then(() => {
-        this.redisDB.quit(() => {
+      clearInterval( this.interval );
+      this.mongooseDB.connection.close().then( () => {
+        this.redisDB.quit( () => {
           console.log(
-            clc.white.bold.bgMagentaBright("[ Redis ]"),
+            clc.white.bold.bgMagentaBright( "[ Redis ]" ),
             "connection closed successfully"
           );
           this.interval = false;
           deferred.resolve();
-        });
-      });
+        } );
+      } );
       return deferred.promise;
     }
   };

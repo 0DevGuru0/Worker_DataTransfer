@@ -1,8 +1,9 @@
 const col = require("chalk"),
   Q = require("q");
-const { MongoDB, RedisDB } = require("../../../../database");
+const { connectToDBs } = require("../../../../database");
 const { ManualTransfer } = require("../../../../containers/transfer");
-const {ui} = require('../../../../helpers')
+const {ui} = require('../../../../helpers');
+
 module.exports = parent => {
   this.stop = () => {
     let deferred = Q.defer();
@@ -19,25 +20,19 @@ module.exports = parent => {
       .catch(deferred.reject);
     return deferred.promise;
   };
-  
   return {
     start: bucket => {
-      return RedisDB()
-        .then(MongoDB)
-        .then(({ redis, mongoose }) => {
-          let deferred = Q.defer();
-          this.mongooseDB = mongoose;
-          this.redisDB = redis;
-          this.initialize = true;
-          deferred.resolve(redis);
-          return deferred.promise;
-        })
-        .then(redis => ManualTransfer(redis, bucket))
-        .catch(console.log)
-        .finally(async ()=>{ 
-          console.log(ui.horizontalLine)
-          if(this.mongooseDB.connection.readyState == 1) await this.stop() 
-         })
+      return connectToDBs().tap(({mongoose,redis})=>{
+        this.mongooseDB = mongoose;
+        this.redisDB = redis;
+        this.initialize = true;
+      })
+      .then(({redis}) => ManualTransfer(redis, bucket))
+      .catch( err => console.log(err instanceof Object ? err.message : err))
+      .finally(async ()=>{ 
+        console.log(ui.horizontalLine)
+        if(this.mongooseDB && this.mongooseDB.connection.readyState == 1) await this.stop() 
+      })
     },
     initialize: () => (this.initialize ? true : false),
     stop:() => {
