@@ -1,37 +1,39 @@
-const chalk = require( "chalk" );
-const Q = require( "q" );
-const { connectToDBs } = require( "../../../../database" );
-const { autoAllTransfer } = require( "../../../../containers/transfer" );
-let mainInterval, mongooseDB, redisDB;
+const { connectToDBs, disconnectFromDBs } = require("../../../../database");
+const { autoAllTransfer } = require("../../../../containers/transfer");
+const { ui } = require("../../../../helpers");
+
 module.exports = () => {
   return {
-    start: intervalTime => connectToDBs().tap(({mongoose,redis})=>{
-      this.mongooseDB = mongoose;
-      this.redisDB = redis;
-      this.initialize = true;
-    })
-    .then( ({redis}) => autoAllTransfer({ intervalTime, redis, bucket: "all" }) )
-    .then( interval => mainInterval = interval )
-    .catch( err => console.log(err instanceof Object ? err.message : err))
-  
-    ,initialize: () => ( mainInterval ? true : false ),
-
-    stop: () => {
-      let deferred = Q.defer();
-      clearInterval( mainInterval );
-      mongooseDB.connection.close().then( () => {
-        redisDB.quit( () => {
-          console.log(
-            chalk.white.bold.bgMagentaBright( "[ Redis ]" ),
-            "connection closed successfully"
-          );
-          mainInterval = false;
-          deferred.resolve();
-        } );
-      } );
-      return deferred.promise;
+    start: intervalTime =>
+      connectToDBs()
+        .tap(({ mongoose, redis }) => {
+          this.mongoose = mongoose;
+          this.redis = redis;
+          this.init = true;
+        })
+        .then(() =>
+          autoAllTransfer({ intervalTime, redis: this.redis, bucket: "all" })
+        )
+        .then(interval => (this.mainInterval = interval))
+        .catch(err => console.log(err instanceof Object ? err.message : err))
+        .finally(async () => {
+          console.log(ui.horizontalLine);
+          if (this.mainInterval) await clearInterval(this.mainInterval);
+          if (this.mongoose && this.mongoose.connection.readyState == 1)
+            await disconnectFromDBs({
+              mongoose: this.mongoose,
+              redis: this.redis,
+              init: this.init
+            });
+        }),
+    initialize: () => (mainInterval ? true : false),
+    stop: async () => {
+      await clearInterval(this.mainInterval);
+      await disconnectFromDBs({
+        mongoose: this.mongoose,
+        redis: this.redis,
+        init: this.init
+      });
     }
   };
 };
-
-// start transfer auto --all
