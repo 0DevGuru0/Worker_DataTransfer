@@ -1,16 +1,16 @@
 const readline = require("readline"),
   events = require("events"),
   _ = require("lodash"),
-  clc = require("chalk"),
-  MuteStream = require("mute-stream");
+  { fromEvent } = require("rxjs"),
+  { filter, switchMap, take } = require("rxjs/operators");
+(clc = require("chalk")), (MuteStream = require("mute-stream"));
 
 const { StartComponent, StatusHandler } = require("../components");
 const { BaseUI, ManPage, stopPro } = require("./util");
 
 /*
-    1/ All files inside vender/inquirer have access to all methods of this files.[by parent name in them files]
+  1/ All files inside vender/inquirer have access to all methods of this files.[by parent name in them files]
 */
-
 class _EventsEmitter extends events {}
 class CliInterface extends BaseUI {
   constructor(props) {
@@ -100,7 +100,7 @@ class CliInterface extends BaseUI {
   }
   exit() {
     this.exitAllow = 0;
-    console.log(clc.bgCyan.bold.white("\r\n  Have Fun...  "), '❤️ ❤️ ❤️');
+    console.log(clc.bgCyan.bold.white("\r\n  Have Fun...  "), "❤️ ❤️ ❤️");
     this.rl.removeListener("SIGINT", this.onForceClose);
     process.removeListener("exit", this.onForceClose);
     this.rl.pause();

@@ -20,7 +20,7 @@ module.exports = () => {
               mongoose: this.mongoose,
               redis: this.redis,
               init: this.init
-            });
+            }).then(() => (this.init = false));
         }),
     initialize: () => (this.init ? true : false),
     stop: () =>
@@ -28,6 +28,6 @@ module.exports = () => {
         mongoose: this.mongoose,
         redis: this.redis,
         init: this.init
-      })
+      }).then(() => (this.init = false))
   };
 };

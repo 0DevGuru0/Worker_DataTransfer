@@ -26,7 +26,7 @@ module.exports = () => {
               init: this.init
             });
         }),
-    initialize: () => (mainInterval ? true : false),
+    initialize: () => (this.mainInterval ? true : false),
     stop: async () => {
       await clearInterval(this.mainInterval);
       await disconnectFromDBs({
