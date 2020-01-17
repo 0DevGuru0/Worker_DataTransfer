@@ -1,8 +1,12 @@
 const Q = require("q"),
   chalk = require("chalk");
 
-const { pageViewsStore, onlineVisitorsStore, visitorsStateStore } = require("./provider");
-const {ui} = require('../../helpers')
+const {
+  pageViewsStore,
+  onlineVisitorsStore,
+  visitorsStateStore
+} = require("./provider");
+const { ui } = require("../../helpers");
 
 const container = {
   onlineVisitorsList: client => {
@@ -14,7 +18,7 @@ const container = {
       countBox: "onlineCount",
       countBox2: "totalVisit"
     };
-    onlineVisitorsStore({client, config})
+    onlineVisitorsStore({ client, config })
       .then(_ => deferred.resolve(client))
       .catch(deferred.reject);
     return deferred.promise;
@@ -25,7 +29,7 @@ const container = {
       collectionName: "pageViews",
       logBucket: "pageViews"
     };
-    pageViewsStore({client, config})
+    pageViewsStore({ client, config })
       .then(_ => deferred.resolve(client))
       .catch(deferred.reject);
     return deferred.promise;
@@ -33,9 +37,9 @@ const container = {
   visitorsState: client => {
     var deferred = Q.defer();
     let config = { logBucket: "visitorsState" };
-    visitorsStateStore({client, config})
-    .then(_ => deferred.resolve(client))
-    .catch(deferred.reject);
+    visitorsStateStore({ client, config })
+      .then(_ => deferred.resolve(client))
+      .catch(deferred.reject);
 
     return deferred.promise;
   }
@@ -44,7 +48,7 @@ const container = {
 module.exports = {
   visitorsCont: container,
   visitorsWorker: client => {
-    console.log( ui.horizontalLine );
+    console.log(ui.horizontalLine);
     var deferred = Q.defer();
     container
       .onlineVisitorsList(client)
@@ -56,7 +60,7 @@ module.exports = {
             "Congratulation!!! Visitors Data Transferring to MongoDB is successfully done.."
           )
         );
-        console.log( ui.horizontalLine );
+        console.log(ui.horizontalLine);
         deferred.resolve(client);
       })
       .catch(deferred.reject);

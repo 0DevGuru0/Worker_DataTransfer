@@ -1,16 +1,22 @@
+const Q = require("q"),
+  _ = require("lodash"),
+  col = require("chalk"),
+  fig = require("figures"),
+  moment = require("moment");
 
+const { loading, errorModel } = require("../../../helpers");
 const {
   Users,
   onlineUsersCount,
   totalUsersCount,
-  totalVerifiedUsersCount} = require('../../../database/model/users')
-  Q = require("q"),
-  _ = require("lodash"),
-  col = require("chalk"),
-  { Spinner } = require("clui"),
-  { ui,loading,errorModel } = require("../../../helpers");
-  fig = require("figures"),
-  moment = require("moment");
+  totalVerifiedUsersCount
+} = require("../../../database/model/users");
+
+/*  FetchData <Constructor>
+    Input:  config,client
+    Output: getDataFromRedis <Function>, getUsersFromRedis <Function>
+*/
+
 function FetchData({ config, client }) {
   this.client = client;
   this.redisBucket = config.redisBucket;
@@ -40,6 +46,7 @@ function FetchData({ config, client }) {
     }
   };
 }
+
 /*  prepareDataToStore <Function>
     Input : fetchData , config
     Output: midContain, delKeys, config, fetchData
@@ -62,7 +69,7 @@ const prepareDataToStore = async ({ fetchData, config }) => {
       } catch (err) {
         deferred.reject(errorModel(config.logBucket, "prepareData", err));
       }
-    Obj.Users = result;
+      Obj.Users = result;
     }
     return Obj;
   };
@@ -83,8 +90,10 @@ const prepareDataToStore = async ({ fetchData, config }) => {
       if (midContain.length === 0) {
         await TempObj(contain, reply, el, midContain);
       } else {
-        let elem = midContain[midContain.length - 1];
-        if (elem.Year === +contain[0] && elem.Month === +contain[1]) {
+        // map through collection find objects that have same year and month
+        let target_obj = { Year: +contain[0], Month: +contain[1] };
+        if (_.some(midContain, target_obj)) {
+          let elem = _.find(midContain, target_obj);
           elem[config.collectionName].push(
             await TempObj_small(contain, reply, el)
           );
@@ -197,32 +206,31 @@ module.exports = ({ client, config }) => {
   let load3 = loading(
     `${col.red(`[${config.logBucket}]`)} Deleting From RedisDB...`
   );
-  let initiate = col.green(`${fig.tick} [${config.logBucket}]`)
+  let initiate = col.green(`${fig.tick} [${config.logBucket}]`);
   Q({ fetchData: new FetchData({ client, config }), config })
     .tap(() => load1.start())
     .then(prepareDataToStore)
     .tap(() => {
       load1.stop();
-      console.log( initiate, "Prepared Data For Saving Into The Database..." );
+      console.log(initiate, "Prepared Data For Saving Into The Database...");
       load2.start();
     })
     .then(storeDataToMongoDB)
     .tap(() => {
       load2.stop();
-      console.log( initiate, "Saved Data To Database..." );
+      console.log(initiate, "Saved Data To Database...");
       load3.start();
     })
     .then(deleteDataFromRedisDB)
     .tap(() => {
       load3.stop();
-      console.log(`${initiate} Data Deleted From Redis...`)
+      console.log(`${initiate} Data Deleted From Redis...`);
     })
     .then(deferred.resolve)
-    .catch(err=>{
-      load3.stop()
-      load1.stop()
-      load2.stop()
-      deferred.reject(err)
-  });
+    .catch(async err => {
+      await Promise.all([load3.stop(), load1.stop(), load2.stop()])
+        .then(() => deferred.reject(err))
+        .catch(reason => deferred.reject(err + "||||" + reason));
+    });
   return deferred.promise;
 };

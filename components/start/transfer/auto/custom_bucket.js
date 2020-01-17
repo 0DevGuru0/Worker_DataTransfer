@@ -12,9 +12,13 @@ module.exports = () => {
           this.init = true;
         })
         .then(() => autoManualTransfer(this.redis, bucket, transferPeriod))
-        .then(interval => (this.mainInterval = interval))
+        .then(({ output, statisticLogs }) => {
+          this.logs = statisticLogs;
+          this.mainInterval = output;
+        })
         .catch(err => console.log(err instanceof Object ? err.message : err))
         .finally(async () => {
+          if (this.logs) console.log(this.logs);
           console.log(ui.horizontalLine);
           if (this.mainInterval) await clearInterval(this.mainInterval);
           if (this.mongoose && this.mongoose.connection.readyState == 1)

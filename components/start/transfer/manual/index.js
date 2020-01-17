@@ -12,6 +12,7 @@ module.exports = () => {
           this.init = true;
         })
         .then(() => ManualTransfer(this.redis, bucket))
+        .then(console.log)
         .catch(err => console.log(err instanceof Object ? err.message : err))
         .finally(async () => {
           console.log(ui.horizontalLine);

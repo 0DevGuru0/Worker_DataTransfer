@@ -2,7 +2,7 @@ const col = require("chalk");
 const Q = require("q");
 const _ = require("lodash");
 const moment = require("moment");
-const { ui,errorModel } = require("../../helpers");
+const { ui, errorModel } = require("../../helpers");
 const asyncRedis = require("async-redis");
 const { usersCont, visitorsCont } = require("../handler");
 let time = moment().format("dddd, MMMM Do YYYY, h:mm a");
@@ -62,8 +62,8 @@ const prepareData = ({ bucket, client }) => {
   let allUsers = bucket.indexOf("all_user_buckets");
   if (allUsers > -1) bucket.splice(allUsers, 1, ..._allUsers);
   bucket = _.uniq(bucket);
-  let firstBucket = bucket.shift();
   let staticsBucket = bucket.join(":");
+  let firstBucket = bucket.shift();
   let Arr = [];
 
   Arr.push(buckets[firstBucket](client));
@@ -81,11 +81,6 @@ const saveFunction = ({ fetch, Arr, staticsBucket }) => {
   let deferred = Q.defer();
   Arr[0]
     .then(async () => {
-      // console.log(
-      //   col.bold.bgGreen.white(
-      //     " Congratulation!!! Users Data Transferring to MongoDB is successfully done.."
-      //   )
-      // );
       try {
         let reply = await fetch.getTransferStaticsData();
         reply[time] = staticsBucket.split(":");
@@ -95,7 +90,19 @@ const saveFunction = ({ fetch, Arr, staticsBucket }) => {
           errorModel("ManualTransfer", "StoreTransferStatics", err)
         );
       }
-      deferred.resolve();
+      deferred.resolve(
+        ui.horizontalLine +
+          "\n" +
+          ui.centralize(col.bold("Data Transfer statistic")) +
+          "\n" +
+          col.bold.bgGreen("Transferred Buckets:") +
+          "\n\t" +
+          staticsBucket.replace(/:/gi, "\n\t") +
+          "\n" +
+          col.bold.bgGreen("Transferred Time:") +
+          "\n\t" +
+          time
+      );
     })
     .catch(async reason => {
       if (reason) deferred.reject(reason);
@@ -103,7 +110,7 @@ const saveFunction = ({ fetch, Arr, staticsBucket }) => {
         let reply = await fetch.getTransferStaticsData();
         reply[time] = "fail";
         await fetch.setTransferStaticsData(reply);
-      } catch (e) {
+      } catch (err) {
         deferred.reject(
           errorModel("ManualTransfer", "StoreTransferStatics", err)
         );
@@ -113,11 +120,11 @@ const saveFunction = ({ fetch, Arr, staticsBucket }) => {
 };
 
 module.exports = (redis, bucket) => {
-  let deferred = Q.defer()
+  let deferred = Q.defer();
   let client = asyncRedis.decorate(redis);
-  Q({ fetch: FetchData(client), bucket, initialize: true, client })
-  .then(store)
-  .then(deferred.resolve)
-  .catch(deferred.reject)
+  Q({ fetch: FetchData(client), bucket, client })
+    .then(store)
+    .then(deferred.resolve)
+    .catch(deferred.reject);
   return deferred.promise;
 };
