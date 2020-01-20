@@ -1,5 +1,4 @@
 module.exports = {
-  autoAllTransfer: require("./auto_all"),
-  autoManualTransfer: require("./auto_manual"),
+  AutoTransfer: require("./auto"),
   ManualTransfer: require("./manual")
 };

@@ -20,7 +20,10 @@ module.exports = async (parent, str) => {
       await manualTransfer()
         .stop()
         .then(cb);
-    if (all) await auto_all.stop().then(cb);
+    if (all)
+      await auto_all()
+        .stop()
+        .then(cb);
     if (bucket)
       await auto_bucket()
         .stop()

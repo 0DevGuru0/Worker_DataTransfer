@@ -190,15 +190,15 @@ const deleteDataFromRedisDB = ({ client, delKeys, config }) => {
 
 module.exports = ({ client, config }) => {
   let deferred = Q.defer();
-  let load1 = loading(
+  let load1 = loading.spin1(
     `${col.red(
       `[${config.logBucket}]`
     )} preparing Data for saving into the Database...`
   );
-  let load2 = loading(
+  let load2 = loading.spin1(
     `${col.red(`[${config.logBucket}]`)} Saving Data To Database...`
   );
-  let load3 = loading(
+  let load3 = loading.spin1(
     `${col.red(`[${config.logBucket}]`)} Deleting From RedisDB...`
   );
   Q({ client, config })

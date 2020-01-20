@@ -5,6 +5,7 @@ const cli_Width = cliWidth({
   defaultWidth: 80,
   output: ttys.output
 });
+
 const horizontalLine = col.bold("-".repeat(cli_Width));
 const centralize = (str, width = cli_Width) => {
   if (width > cli_Width) width = cli_Width + 15;
@@ -30,7 +31,7 @@ const fullText = text => {
   return decText;
 };
 module.exports = {
-  horizontalLine: col.bold("-".repeat(cli_Width)),
+  horizontalLine,
   centralize,
   fullText,
   cli_Width

@@ -2,7 +2,7 @@ const clc = require("chalk");
 const _ = require("lodash");
 const ask = require("../../vendor/inquirer"),
   { BaseUI } = require("../../public/util"),
-  { auto_all, auto_bucket } = require("./transfer/auto"),
+  autoTransfer = require("./transfer/auto"),
   manualTransfer = require("./transfer/manual");
 
 class StartComponent extends BaseUI {
@@ -52,8 +52,7 @@ class StartComponent extends BaseUI {
   start(str, parent) {
     ask.promptParent = parent;
     this.manualTransfer = manualTransfer(parent.rl);
-    this.auto_all = auto_all();
-    this.auto_bucket = auto_bucket();
+    this.autoTransfer = autoTransfer();
 
     let container = _.map(str.trim().split(" "), elem =>
       elem.toLowerCase().trim()
@@ -62,8 +61,8 @@ class StartComponent extends BaseUI {
       return this.startHelp();
 
     if (container[2] === "auto") {
-      if (container[3].startsWith("--bucket")) return this.autoBucket();
-      if (container[3] === "--all") return this.autoAll();
+      if (container[3].startsWith("--bucket")) return this.autoTransfer();
+      if (container[3] === "--all") return this.autoTransfer();
     }
 
     if (container[2] === "manual") return this.manual();
@@ -79,12 +78,13 @@ class StartComponent extends BaseUI {
   autoBucket() {
     let question = _.concat(this.QA_intervalTime, this.QA_redisBuckets);
     let callback = ({ intervalTime, redisBuckets }) =>
-      this.auto_bucket.start(redisBuckets, intervalTime);
+      this.autoTransfer.start({ bucket: redisBuckets, intervalTime });
     return ask.prompt(question, callback);
   }
   autoAll() {
     let question = _.concat(this.QA_intervalTime);
-    let callback = ({ intervalTime }) => this.auto_all.start(intervalTime);
+    let callback = ({ intervalTime }) =>
+      this.autoTransfer.start({ intervalTime, bucket: null });
     return ask.prompt(question, callback);
   }
   manual() {

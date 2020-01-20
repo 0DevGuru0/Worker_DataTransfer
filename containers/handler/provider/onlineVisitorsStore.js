@@ -7,7 +7,7 @@ const moment = require("moment"),
     Visitors,
     onlineVisitorsList
   } = require("../../../database/model/visitors"),
-  { ui, errorModel, loading } = require("../../../helpers");
+  { errorModel, loading } = require("../../../helpers");
 
 const fetchDataFromRedis = ({ client, config }) => {
   let deferred = Q.defer();
@@ -190,15 +190,15 @@ const deleteDataFromRedisDB = ({ client, config, delKeys }) => {
 
 module.exports = ({ client, config }) => {
   let deferred = Q.defer();
-  let load1 = loading(
+  let load1 = loading.spin1(
     `${col.red(
       `[${config.logBucket}]`
     )} Preparing Data for saving into the Database...`
   );
-  let load2 = loading(
+  let load2 = loading.spin1(
     `${col.red(`[${config.logBucket}]`)} Saving Data To Database...`
   );
-  let load3 = loading(
+  let load3 = loading.spin1(
     `${col.red(`[${config.logBucket}]`)} Deleting From RedisDB...`
   );
   Q({ client, config })

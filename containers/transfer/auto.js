@@ -79,24 +79,38 @@ const controller = async ({
   let statisticLogs = await log(staticsBucket, client, timeContainer);
   deferred.resolve({ output, statisticLogs });
 };
-
-module.exports = (redis, bucket, transferPeriod) => {
-  let buckets = Object.assign({}, usersCont, visitorsCont);
-  let _allVisi = Object.keys(visitorsCont);
-  let _allUsers = Object.keys(usersCont);
+/*
+let bucket = _.keys(buckets);
+let Arr = [];
+Arr.push(buckets[firstBucket](client));
+_.forEach(buckets, (val, key) => {
+  let arrLength = Arr.length - 1;
+  Arr.push(Arr[arrLength].then(val));
+  Arr.shift();
+});
+*/
+module.exports = ({ redis, bucket, intervalTime }) => {
+  let buckets = _.assign({}, usersCont, visitorsCont);
   let client = asyncRedis.decorate(redis);
   let deferred = Q.defer();
-  let allVisi = bucket.indexOf("all_visitor_buckets");
-  if (allVisi > -1) bucket.splice(allVisi, 1, ..._allVisi);
-  let allUsers = bucket.indexOf("all_user_buckets");
-  if (allUsers > -1) bucket.splice(allUsers, 1, ..._allUsers);
-  bucket = _.uniq(bucket);
+  // ? Deference between auto_all & auto_manual
+  if (bucket) {
+    let _allVisi = _.keys(visitorsCont);
+    let _allUsers = _.keys(usersCont);
+    let allVisi = bucket.indexOf("all_visitor_buckets");
+    if (allVisi > -1) bucket.splice(allVisi, 1, ..._allVisi);
+    let allUsers = bucket.indexOf("all_user_buckets");
+    if (allUsers > -1) bucket.splice(allUsers, 1, ..._allUsers);
+    bucket = _.uniq(bucket);
+  } else {
+    bucket = _.keys(buckets);
+  }
   let staticsBucket = bucket.join(":");
   let firstBucket = bucket.shift();
   let Arr = [];
-  transferPeriod = transferPeriod.replace("hour", "");
-  transferPeriod = +transferPeriod * 1000 * 60 * 60;
-  transferPeriod = 15 * 1000; //TODO: TEST
+  intervalTime = intervalTime.replace("hour", "");
+  intervalTime = +intervalTime * 1000 * 60 * 60;
+  intervalTime = 10 * 1000; //TODO: TEST
   const timeContainer = [];
   common.uiBeforeComplete(moment().format("dddd, MMMM Do YYYY, h:mm a"));
   let interval = setInterval(() => {
@@ -137,7 +151,7 @@ module.exports = (redis, bucket, transferPeriod) => {
               deferred.reject({ err, interval });
             })
       );
-  }, transferPeriod);
+  }, intervalTime);
   fromEvent(process.stdin, "keypress", (value, key) => ({
     value: value,
     key: key || {}
