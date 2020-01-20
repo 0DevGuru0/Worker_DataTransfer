@@ -3,8 +3,10 @@ const Q = require("q"),
   col = require("chalk"),
   fig = require("figures"),
   moment = require("moment");
+const { fromEvent } = require("rxjs");
+const { take, filter } = require("rxjs/operators");
 
-const { loading, errorModel } = require("../../../helpers");
+const { loading, errorModel, ui } = require("../../../helpers");
 const {
   Users,
   onlineUsersCount,
@@ -12,6 +14,21 @@ const {
   totalVerifiedUsersCount
 } = require("../../../database/model/users");
 
+const uiBeforeComplete = config => {
+  let load1 = loading.spin1(
+    `${col.red(
+      `[${config.logBucket}]`
+    )} preparing Data for saving into the Database...`
+  );
+  let load2 = loading.spin1(
+    `${col.red(`[${config.logBucket}]`)} Saving Data To Database...`
+  );
+  let load3 = loading.spin1(
+    `${col.red(`[${config.logBucket}]`)} Deleting From RedisDB...`
+  );
+  let initiate = col.green(`${fig.tick} [${config.logBucket}]`);
+  return { load1, load2, load3, initiate };
+};
 /*  FetchData <Constructor>
     Input:  config,client
     Output: getDataFromRedis <Function>, getUsersFromRedis <Function>
@@ -182,6 +199,21 @@ const storeDataToMongoDB = async ({
     Input: fetchData, config, delKeys
     Output: result
 */
+let stopCommand = false;
+const events = () =>
+  fromEvent(process.stdin, "keypress", (value, key) => ({
+    value: value,
+    key: key || {}
+  }))
+    .pipe(
+      filter(({ key }) => key && key.ctrl && key.name === "x"),
+      take(1)
+    )
+    .subscribe(() => {
+      console.log("\r");
+      console.log(col.bold.bgRed(ui.fullText("start to canalling process...")));
+      stopCommand = true;
+    });
 const deleteDataFromRedisDB = async ({ fetchData, config, delKeys }) => {
   let deferred = Q.defer();
   let result;
@@ -195,41 +227,49 @@ const deleteDataFromRedisDB = async ({ fetchData, config, delKeys }) => {
 };
 module.exports = ({ client, config }) => {
   let deferred = Q.defer();
-  let load1 = loading(
-    `${col.red(
-      `[${config.logBucket}]`
-    )} preparing Data for saving into the Database...`
-  );
-  let load2 = loading(
-    `${col.red(`[${config.logBucket}]`)} Saving Data To Database...`
-  );
-  let load3 = loading(
-    `${col.red(`[${config.logBucket}]`)} Deleting From RedisDB...`
-  );
-  let initiate = col.green(`${fig.tick} [${config.logBucket}]`);
+  let { load1, load2, load3, initiate } = uiBeforeComplete(config);
+  let ev = events();
   Q({ fetchData: new FetchData({ client, config }), config })
-    .tap(() => load1.start())
+    .tap(() => {
+      load1.start();
+      if (stopCommand) throw new Error("SIGSTOP");
+    })
     .then(prepareDataToStore)
     .tap(() => {
       load1.stop();
       console.log(initiate, "Prepared Data For Saving Into The Database...");
       load2.start();
+      if (stopCommand) throw new Error("SIGSTOP");
     })
     .then(storeDataToMongoDB)
     .tap(() => {
       load2.stop();
       console.log(initiate, "Saved Data To Database...");
       load3.start();
+      if (stopCommand) throw new Error("SIGSTOP");
     })
     .then(deleteDataFromRedisDB)
     .tap(() => {
       load3.stop();
       console.log(`${initiate} Data Deleted From Redis...`);
+      if (stopCommand) throw new Error("SIGSTOP");
     })
-    .then(deferred.resolve)
+    .then(val => {
+      deferred.resolve(val);
+      ev.unsubscribe();
+    })
     .catch(async err => {
       await Promise.all([load3.stop(), load1.stop(), load2.stop()])
-        .then(() => deferred.reject(err))
+        .then(() => {
+          stopCommand = false;
+          if (err.message === "SIGSTOP") {
+            deferred.reject(
+              col.bold.bgRed(ui.fullText("process stopped successfully."))
+            );
+          } else {
+            return deferred.reject(err);
+          }
+        })
         .catch(reason => deferred.reject(err + "||||" + reason));
     });
   return deferred.promise;

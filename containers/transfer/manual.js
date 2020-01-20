@@ -6,7 +6,21 @@ const { ui, errorModel } = require("../../helpers");
 const asyncRedis = require("async-redis");
 const { usersCont, visitorsCont } = require("../handler");
 let time = moment().format("dddd, MMMM Do YYYY, h:mm a");
-
+const transferredReport = staticsBucket => {
+  return (
+    ui.horizontalLine +
+    "\n" +
+    ui.centralize(col.bold("Data Transfer statistic")) +
+    "\n" +
+    col.bold.bgGreen("Transferred Buckets:") +
+    "\n\t" +
+    staticsBucket.replace(/:/gi, "\n\t") +
+    "\n" +
+    col.bold.bgGreen("Transferred Time:") +
+    "\n\t" +
+    time
+  );
+};
 function FetchData(client) {
   this.client = client;
   this.bucket = "transferStatics";
@@ -42,7 +56,6 @@ const uiBeforeComplete = () => {
   );
   console.log(ui.horizontalLine);
 };
-
 const store = Q.fbind(({ fetch, bucket, client }) => {
   let { staticsBucket, Arr } = prepareData({ bucket, client });
   return saveFunction({
@@ -52,7 +65,6 @@ const store = Q.fbind(({ fetch, bucket, client }) => {
     bucket
   });
 });
-
 const prepareData = ({ bucket, client }) => {
   let buckets = Object.assign({}, usersCont, visitorsCont);
   let _allVisi = Object.keys(visitorsCont);
@@ -90,19 +102,7 @@ const saveFunction = ({ fetch, Arr, staticsBucket }) => {
           errorModel("ManualTransfer", "StoreTransferStatics", err)
         );
       }
-      deferred.resolve(
-        ui.horizontalLine +
-          "\n" +
-          ui.centralize(col.bold("Data Transfer statistic")) +
-          "\n" +
-          col.bold.bgGreen("Transferred Buckets:") +
-          "\n\t" +
-          staticsBucket.replace(/:/gi, "\n\t") +
-          "\n" +
-          col.bold.bgGreen("Transferred Time:") +
-          "\n\t" +
-          time
-      );
+      deferred.resolve(transferredReport(time, staticsBucket));
     })
     .catch(async reason => {
       if (reason) deferred.reject(reason);
@@ -118,7 +118,6 @@ const saveFunction = ({ fetch, Arr, staticsBucket }) => {
     });
   return deferred.promise;
 };
-
 module.exports = (redis, bucket) => {
   let deferred = Q.defer();
   let client = asyncRedis.decorate(redis);

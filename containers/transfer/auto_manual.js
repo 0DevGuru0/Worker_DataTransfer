@@ -23,8 +23,6 @@ const statistic = {
     await client.hset("transferStatics", "auto", JSON.stringify(reply));
   },
   failTransferredStatistic: async (reason, client, time) => {
-    if (reason)
-      return new Error(errorModel("[AutoTransfer]", "[StoreToDB]", reason));
     let reply;
     try {
       reply = await client.hget("transferStatics", "auto");
@@ -42,6 +40,9 @@ const statistic = {
         errorModel("[AutoTransfer]", "[transferStatics/set]", err)
       );
     }
+    return reason.match(/process stopped successfully./gim)
+      ? reason
+      : new Error(errorModel("[AutoTransfer]", "[StoreToDB]", reason));
   }
 };
 const log = async (buckets, client, timeContainer) => {
@@ -50,6 +51,7 @@ const log = async (buckets, client, timeContainer) => {
     statisticLogs[time] && statisticLogs[time] !== "fail" ? true : false
   );
   let outputSchema = text =>
+    "\r" +
     ui.horizontalLine +
     "\n" +
     ui.centralize(col.bold("Data Transfer Statistic")) +
@@ -67,33 +69,17 @@ const log = async (buckets, client, timeContainer) => {
         ui.centralize(col.bold("no data has been transferred yet..."))
       );
 };
-const controller = ({
+const controller = async ({
   output,
   deferred,
   staticsBucket,
   client,
   timeContainer
 }) => {
-  fromEvent(process.stdin, "keypress", (value, key) => ({
-    value: value,
-    key: key || {}
-  }))
-    .pipe(
-      filter(
-        ({ key }) =>
-          key &&
-          key.ctrl &&
-          key.name === "x" &&
-          key.name !== "enter" &&
-          key.name !== "return"
-      ),
-      take(1)
-    )
-    .subscribe(async () => {
-      let statisticLogs = await log(staticsBucket, client, timeContainer);
-      deferred.resolve({ output, statisticLogs });
-    });
+  let statisticLogs = await log(staticsBucket, client, timeContainer);
+  deferred.resolve({ output, statisticLogs });
 };
+
 module.exports = (redis, bucket, transferPeriod) => {
   let buckets = Object.assign({}, usersCont, visitorsCont);
   let _allVisi = Object.keys(visitorsCont);
@@ -110,7 +96,7 @@ module.exports = (redis, bucket, transferPeriod) => {
   let Arr = [];
   transferPeriod = transferPeriod.replace("hour", "");
   transferPeriod = +transferPeriod * 1000 * 60 * 60;
-  transferPeriod = 7 * 1000; //TODO: TEST
+  transferPeriod = 15 * 1000; //TODO: TEST
   const timeContainer = [];
   common.uiBeforeComplete(moment().format("dddd, MMMM Do YYYY, h:mm a"));
   let interval = setInterval(() => {
@@ -139,15 +125,36 @@ module.exports = (redis, bucket, transferPeriod) => {
           )
       )
       .catch(
-        async err => await statistic.failTransferredStatistic(err, client, time)
+        async err =>
+          await statistic
+            .failTransferredStatistic(err, client, time)
+            .then(async err => {
+              console.log(err);
+              deferred.reject({ err, interval });
+            })
+            .catch(err => {
+              console.log(err);
+              deferred.reject({ err, interval });
+            })
       );
   }, transferPeriod);
-  controller({
-    output: interval,
-    deferred,
-    staticsBucket,
-    client,
-    timeContainer
-  });
+  fromEvent(process.stdin, "keypress", (value, key) => ({
+    value: value,
+    key: key || {}
+  }))
+    .pipe(
+      filter(({ key }) => key && key.ctrl && key.name === "x"),
+      take(1)
+    )
+    .subscribe(() => {
+      controller({
+        output: interval,
+        deferred,
+        staticsBucket,
+        client,
+        timeContainer
+      });
+    });
+
   return deferred.promise;
 };

@@ -16,7 +16,11 @@ module.exports = () => {
           this.logs = statisticLogs;
           this.mainInterval = output;
         })
-        .catch(err => console.log(err instanceof Object ? err.message : err))
+        .catch(({ err, interval }) => {
+          // TODO:test
+          this.mainInterval = interval;
+          console.log(err instanceof Object ? err.message : err);
+        })
         .finally(async () => {
           if (this.logs) console.log(this.logs);
           console.log(ui.horizontalLine);
