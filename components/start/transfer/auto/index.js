@@ -12,17 +12,20 @@ module.exports = () => {
           this.init = true;
         })
         .then(() => AutoTransfer({ redis: this.redis, bucket, intervalTime }))
-        .then(({ output, statisticLogs }) => {
+        .then(({ output, statisticLogs, event }) => {
           this.logs = statisticLogs;
           this.mainInterval = output;
+          this.closeEvent = event;
         })
-        .catch(({ err, interval }) => {
+        .catch(({ err, interval, event }) => {
+          this.closeEvent = event;
           this.mainInterval = interval;
           console.log(err instanceof Object ? err.message : err);
         })
         .finally(async () => {
           if (this.logs) console.log(this.logs);
           console.log(ui.horizontalLine);
+          if (!this.closeEvent.closed) this.closeEvent.unsubscribe();
           if (this.mainInterval) await clearInterval(this.mainInterval);
           if (this.mongoose && this.mongoose.connection.readyState == 1)
             await disconnectFromDBs({

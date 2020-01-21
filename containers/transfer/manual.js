@@ -5,6 +5,7 @@ const moment = require("moment");
 const { ui, errorModel } = require("../../helpers");
 const asyncRedis = require("async-redis");
 const { usersCont, visitorsCont } = require("../handler");
+const common = require("./common");
 let time = moment().format("dddd, MMMM Do YYYY, h:mm a");
 const transferredReport = staticsBucket => {
   return (
@@ -40,22 +41,7 @@ function FetchData(client) {
     }
   };
 }
-const uiBeforeComplete = () => {
-  console.log(
-    col.black.bold.bgYellow("[ Data Transfer ]"),
-    "System Initialized..."
-  );
-  console.log(
-    col.black.bold.bgYellow("[ Data Transfer ]"),
-    "Started Time::",
-    time
-  );
-  console.log(
-    col.black.bold.bgYellow("[ Data Transfer ]"),
-    "Start To Transfer..."
-  );
-  console.log(ui.horizontalLine);
-};
+
 const store = Q.fbind(({ fetch, bucket, client }) => {
   let { staticsBucket, Arr } = prepareData({ bucket, client });
   return saveFunction({
@@ -85,7 +71,8 @@ const prepareData = ({ bucket, client }) => {
     Arr.push(Arr[arrLength].then(currentBucket));
     Arr.shift();
   });
-  uiBeforeComplete();
+  common.uiBeforeComplete(time);
+  console.log(ui.horizontalLine);
   return { staticsBucket, Arr };
 };
 

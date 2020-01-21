@@ -1,14 +1,94 @@
 const moment = require("moment"),
   Q = require("q"),
-  _ = require("Lodash");
+  _ = require("Lodash"),
+  fig = require("figures"),
+  col = require("chalk"),
+  {
+    Visitors,
+    onlineVisitorsList
+  } = require("../../../database/model/visitors"),
+  { errorModel, loading, ui } = require("../../../helpers");
 
-const {
-  Visitors,
-  onlineVisitorsList
-} = require("../../../database/model/visitors");
-const { errorModel } = require("../../../helpers");
-const UILog = require("./ui");
+let stopCommand = false;
+const events = () =>
+  fromEvent(process.stdin, "keypress", (value, key) => ({
+    value: value,
+    key: key || {}
+  }))
+    .pipe(
+      filter(({ key }) => key && key.ctrl && key.name === "x"),
+      take(1)
+    )
+    .subscribe(() => {
+      console.log("\r");
+      console.log(col.bold.bgRed(ui.fullText("start to canalling process...")));
+      stopCommand = true;
+    });
 
+const uiBeforeComplete = config => {
+  let load1 = loading.spin1(
+    `${col.red(
+      `[${config.logBucket}]`
+    )} preparing Data for saving into the Database...`
+  );
+  let load2 = loading.spin1(
+    `${col.red(`[${config.logBucket}]`)} Saving Data To Database...`
+  );
+  let load3 = loading.spin1(
+    `${col.red(`[${config.logBucket}]`)} Deleting From RedisDB...`
+  );
+  let initiate = col.green(`${fig.tick} [${config.logBucket}]`);
+  return { load1, load2, load3, initiate };
+};
+function uiSectionsComplete() {
+  let initialLog = () => {
+    load1.start();
+    if (stopCommand) throw new Error("SIGSTOP");
+  };
+  let preparedDataLog = () => {
+    load1.stop();
+    console.log(initiate, "Prepared Data For Saving Into The Database...");
+    load2.start();
+    if (stopCommand) throw new Error("SIGSTOP");
+  };
+  let storedDataLog = () => {
+    load2.stop();
+    console.log(initiate, "Saved Data To Database...");
+    load3.start();
+    if (stopCommand) throw new Error("SIGSTOP");
+  };
+  let deletedDataLog = () => {
+    load3.stop();
+    console.log(`${initiate} Data Deleted From Redis...`);
+    if (stopCommand) throw new Error("SIGSTOP");
+  };
+  let resolveAll = val => {
+    deferred.resolve(val);
+    ev.unsubscribe();
+  };
+  let catchAllError = async err => {
+    await Promise.all([load3.stop(), load1.stop(), load2.stop()])
+      .then(() => {
+        stopCommand = false;
+        if (err.message === "SIGSTOP") {
+          deferred.reject(
+            col.bold.bgRed(ui.fullText("process stopped successfully."))
+          );
+        } else {
+          return deferred.reject(err);
+        }
+      })
+      .catch(reason => deferred.reject(err + "||||" + reason));
+  };
+  return {
+    initialLog,
+    preparedDataLog,
+    storedDataLog,
+    deletedDataLog,
+    catchAllError,
+    resolveAll
+  };
+}
 const fetchDataFromRedis = ({ client, config }) => {
   let deferred = Q.defer();
   client
@@ -187,9 +267,48 @@ const deleteDataFromRedisDB = ({ client, config, delKeys }) => {
   //     .catch(err => deferred.reject(errorModel(config.logBucket,'deleteDataFromRedisDB',err)))
   return deferred.promise;
 };
-module.exports = ({ client, config }) =>
-  new UILog({ config, client }).master({
-    Prepare: fetchDataFromRedis,
-    Save: storeDataToMongoDB,
-    Delete: deleteDataFromRedisDB
-  });
+
+module.exports = ({ client, config }) => {
+  let deferred = Q.defer();
+  let { load1, load2, load3, initiate } = uiBeforeComplete(config);
+  let ev = events();
+  Q({ client, config })
+    .tap(initialLog)
+    .then(fetchDataFromRedis)
+    .tap(() => {
+      load1.stop();
+      console.log(initiate, "Prepared Data For Saving Into The Database...");
+      load2.start();
+    })
+    .then(storeDataToMongoDB)
+    .tap(() => {
+      load2.stop();
+      console.log(initiate, "Saved Data To Database...");
+      load3.start();
+    })
+    .then(deleteDataFromRedisDB)
+    .tap(() => {
+      load3.stop();
+      console.log(_.join([initiate, " Data Deleted From Redis..."], ""));
+    })
+    .then(val => {
+      deferred.resolve(val);
+      ev.unsubscribe();
+    })
+    .catch(async err => {
+      await Promise.all([load3.stop(), load1.stop(), load2.stop()])
+        .then(() => {
+          stopCommand = false;
+          if (err.message === "SIGSTOP") {
+            deferred.reject(
+              col.bold.bgRed(ui.fullText("process stopped successfully."))
+            );
+          } else {
+            return deferred.reject(err);
+          }
+        })
+        .catch(reason => deferred.reject(err + "||||" + reason));
+    });
+
+  return deferred.promise;
+};

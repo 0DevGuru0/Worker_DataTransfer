@@ -68,7 +68,7 @@ class Prompt {
     // *NOTICE:
     //   by specifying second argument make event to be headless response
     //   if no process exist to be stop
-    this.parentInterface.e.emit("stop", "hideResponse");
+    // this.parentInterface.e.emit("stop", "hideResponse");
   }
   handleSubmitEvents(submit) {
     let self = this;

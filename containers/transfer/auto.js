@@ -74,10 +74,11 @@ const controller = async ({
   deferred,
   staticsBucket,
   client,
-  timeContainer
+  timeContainer,
+  event
 }) => {
   let statisticLogs = await log(staticsBucket, client, timeContainer);
-  deferred.resolve({ output, statisticLogs });
+  deferred.resolve({ output, statisticLogs, event });
 };
 /*
 let bucket = _.keys(buckets);
@@ -113,6 +114,24 @@ module.exports = ({ redis, bucket, intervalTime }) => {
   intervalTime = 10 * 1000; //TODO: TEST
   const timeContainer = [];
   common.uiBeforeComplete(moment().format("dddd, MMMM Do YYYY, h:mm a"));
+  const event = fromEvent(process.stdin, "keypress", (value, key) => ({
+    value: value,
+    key: key || {}
+  }))
+    .pipe(
+      filter(({ key }) => key && key.ctrl && key.name === "x"),
+      take(1)
+    )
+    .subscribe(() => {
+      controller({
+        output: interval,
+        deferred,
+        staticsBucket,
+        client,
+        timeContainer,
+        event
+      });
+    });
   let interval = setInterval(() => {
     let time = moment().format("dddd, MMMM Do YYYY, h:mm a");
     console.log(ui.horizontalLine);
@@ -144,31 +163,13 @@ module.exports = ({ redis, bucket, intervalTime }) => {
             .failTransferredStatistic(err, client, time)
             .then(async err => {
               console.log(err);
-              deferred.reject({ err, interval });
+              deferred.reject({ err, interval, event });
             })
             .catch(err => {
               console.log(err);
-              deferred.reject({ err, interval });
+              deferred.reject({ err, interval, event });
             })
       );
   }, intervalTime);
-  fromEvent(process.stdin, "keypress", (value, key) => ({
-    value: value,
-    key: key || {}
-  }))
-    .pipe(
-      filter(({ key }) => key && key.ctrl && key.name === "x"),
-      take(1)
-    )
-    .subscribe(() => {
-      controller({
-        output: interval,
-        deferred,
-        staticsBucket,
-        client,
-        timeContainer
-      });
-    });
-
   return deferred.promise;
 };

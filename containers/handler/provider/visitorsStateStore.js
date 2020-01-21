@@ -3,7 +3,7 @@ const _ = require("lodash");
 const Q = require("q");
 const col = require("chalk");
 const fig = require("figures");
-
+const UILog = require("./ui");
 const { loading, errorModel } = require("../../../helpers");
 const {
   MainState,
@@ -349,58 +349,66 @@ const storeDataToMongoDB = ({ container, config, fetchData }) => {
   return deferred.promise;
 };
 
-module.exports = ({ client, config }) => {
-  let deferred = Q.defer();
-  let load1 = loading.spin1(
-    `${col.red(
-      `[${config.logBucket}]`
-    )} preparing Data for saving into the Database...`
-  );
-  let load2 = loading.spin1(
-    `${col.red(`[${config.logBucket}]`)} Saving Data To Database...`
-  );
-  let load3 = loading.spin1(
-    `${col.red(`[${config.logBucket}]`)} Deleting From RedisDB...`
-  );
-  Q({ fetchData: new FetchData(client), config })
-    .tap(() => load1.start())
-    .then(prepareDataToStore)
-    .tap(() => {
-      load1.stop();
-      console.log(
-        col.green(`${fig.tick} [${config.logBucket}]`),
-        "Prepared Data For Saving Into The Database..."
-      );
-      load2.start();
-    })
-    .then(storeDataToMongoDB)
-    .tap(() => {
-      load2.stop();
-      console.log(
-        col.green(`${fig.tick} [${config.logBucket}]`),
-        "Saved Data To Database..."
-      );
-      load3.start();
-    })
-    .then(deleteDataFromRedisDB)
-    .tap(() => {
-      load3.stop();
-      console.log(
-        _.join(
-          [
-            col.green(`${fig.tick} [${config.logBucket}]`),
-            " Data Deleted From Redis..."
-          ],
-          ""
-        )
-      );
-    })
-    .then(deferred.resolve)
-    .catch(err => {
-      load3.stop();
-      load1.stop();
-      load2.stop();
-      deferred.reject(err);
-    });
-  return deferred.promise;
-};
+// module.exports = ({ client, config }) => {
+//   let deferred = Q.defer();
+//   let load1 = loading.spin1(
+//     `${col.red(
+//       `[${config.logBucket}]`
+//     )} preparing Data for saving into the Database...`
+//   );
+//   let load2 = loading.spin1(
+//     `${col.red(`[${config.logBucket}]`)} Saving Data To Database...`
+//   );
+//   let load3 = loading.spin1(
+//     `${col.red(`[${config.logBucket}]`)} Deleting From RedisDB...`
+//   );
+//   Q({ fetchData: new FetchData(client), config })
+//     .tap(() => load1.start())
+//     .then(prepareDataToStore)
+//     .tap(() => {
+//       load1.stop();
+//       console.log(
+//         col.green(`${fig.tick} [${config.logBucket}]`),
+//         "Prepared Data For Saving Into The Database..."
+//       );
+//       load2.start();
+//     })
+//     .then(storeDataToMongoDB)
+//     .tap(() => {
+//       load2.stop();
+//       console.log(
+//         col.green(`${fig.tick} [${config.logBucket}]`),
+//         "Saved Data To Database..."
+//       );
+//       load3.start();
+//     })
+//     .then(deleteDataFromRedisDB)
+//     .tap(() => {
+//       load3.stop();
+//       console.log(
+//         _.join(
+//           [
+//             col.green(`${fig.tick} [${config.logBucket}]`),
+//             " Data Deleted From Redis..."
+//           ],
+//           ""
+//         )
+//       );
+//     })
+//     .then(deferred.resolve)
+//     .catch(err => {
+//       load3.stop();
+//       load1.stop();
+//       load2.stop();
+//       deferred.reject(err);
+//     });
+//   return deferred.promise;
+// };
+
+module.exports = ({ client, config }) =>
+  new UILog({ config, client }).master({
+    Initial: { fetchData: new FetchData(client), config },
+    Prepare: prepareDataToStore,
+    Save: storeDataToMongoDB,
+    Delete: deleteDataFromRedisDB
+  });
