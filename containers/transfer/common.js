@@ -35,27 +35,3 @@ module.exports = {
       time;
   }
 };
-
-const log = async (buckets, client, timeContainer) => {
-  let statisticLogs = JSON.parse(await client.hget("transferStatics", "auto"));
-  const contain = timeContainer.filter(time =>
-    statisticLogs[time] && statisticLogs[time] !== "fail" ? true : false
-  );
-  let outputSchema = text =>
-    ui.horizontalLine +
-    "\n" +
-    ui.centralize(col.bold("Data Transfer Statistic")) +
-    "\n\n" +
-    col.bold.bgGreen("Transferred Buckets:") +
-    "\n\t" +
-    buckets.split(":").join("\n\t") +
-    "\n\n" +
-    col.bold.bgGreen("Transferred Time:") +
-    "\n" +
-    text;
-  return contain.length > 0
-    ? outputSchema("\t" + contain.join("\n\t"))
-    : outputSchema(
-        ui.centralize(col.bold("no data has been transferred yet..."))
-      );
-};

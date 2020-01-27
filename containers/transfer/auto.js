@@ -1,175 +1,170 @@
-const { visitorsCont, usersCont } = require("../handler");
-const asyncRedis = require("async-redis");
 const Q = require("q");
-const { ui, errorModel } = require("../../helpers");
+const _ = require("lodash");
 const col = require("chalk");
 const moment = require("moment");
-const _ = require("lodash");
+const asyncRedis = require("async-redis");
+const { fromEvent, of, iif, EMPTY } = require("rxjs");
+const { filter, mergeMap, take } = require("rxjs/operators");
+
 const common = require("./common");
-const { fromEvent } = require("rxjs");
-const { filter, take } = require("rxjs/operators");
-const statistic = {
-  successTransferredStatistic: async (client, staticsBucket, time) => {
-    let reply;
-    try {
-      reply = await client.hget("transferStatics", "auto");
-    } catch (err) {
-      return new Error(
-        errorModel("[AutoTransfer]", "[transferStatics/get]", err)
-      );
-    }
-    reply = reply ? JSON.parse(reply) : {};
-    reply[time] = staticsBucket.split(":");
-    await client.hset("transferStatics", "auto", JSON.stringify(reply));
-  },
-  failTransferredStatistic: async (reason, client, time) => {
-    let reply;
-    try {
-      reply = await client.hget("transferStatics", "auto");
-    } catch (err) {
-      return new Error(
-        errorModel("[AutoTransfer]", "[transferStatics/get]", err)
-      );
-    }
-    reply = reply ? JSON.parse(reply) : {};
-    reply[time] = "fail";
-    try {
-      await client.hset("transferStatics", "auto", JSON.stringify(reply));
-    } catch (err) {
-      return new Error(
-        errorModel("[AutoTransfer]", "[transferStatics/set]", err)
-      );
-    }
-    return reason.match(/process stopped successfully./gim)
-      ? reason
-      : new Error(errorModel("[AutoTransfer]", "[StoreToDB]", reason));
+const { visitorsCont, usersCont } = require("../handler");
+const { ui, errorModel } = require("../../helpers");
+const logReport = require("./log");
+
+const mainClass = class AutoTransfer {
+  constructor(props) {
+    this.bucket = props.bucket;
+    this.intervalTime =
+      +props.intervalTime.replace("hour", "") * 1000 * 60 * 60;
+    this.stopEvent = false;
+    this.client = asyncRedis.decorate(props.redis);
+    this.timeContainer = [];
   }
-};
-const log = async (buckets, client, timeContainer) => {
-  let statisticLogs = JSON.parse(await client.hget("transferStatics", "auto"));
-  const contain = timeContainer.filter(time =>
-    statisticLogs[time] && statisticLogs[time] !== "fail" ? true : false
-  );
-  let outputSchema = text =>
-    "\r" +
-    ui.horizontalLine +
-    "\n" +
-    ui.centralize(col.bold("Data Transfer Statistic")) +
-    "\n\n" +
-    col.bold.bgGreen("Transferred Buckets:") +
-    "\n\t" +
-    buckets.split(":").join("\n\t") +
-    "\n\n" +
-    col.bold.bgGreen("Transferred Time:") +
-    "\n" +
-    text;
-  return contain.length > 0
-    ? outputSchema("\t" + contain.join("\n\t"))
-    : outputSchema(
-        ui.centralize(col.bold("no data has been transferred yet..."))
-      );
-};
-const controller = async ({
-  output,
-  deferred,
-  staticsBucket,
-  client,
-  timeContainer,
-  event
-}) => {
-  let statisticLogs = await log(staticsBucket, client, timeContainer);
-  deferred.resolve({ output, statisticLogs, event });
-};
-/*
-let bucket = _.keys(buckets);
-let Arr = [];
-Arr.push(buckets[firstBucket](client));
-_.forEach(buckets, (val, key) => {
-  let arrLength = Arr.length - 1;
-  Arr.push(Arr[arrLength].then(val));
-  Arr.shift();
-});
-*/
-module.exports = ({ redis, bucket, intervalTime }) => {
-  let buckets = _.assign({}, usersCont, visitorsCont);
-  let client = asyncRedis.decorate(redis);
-  let deferred = Q.defer();
-  // ? Deference between auto_all & auto_manual
-  if (bucket) {
-    let _allVisi = _.keys(visitorsCont);
-    let _allUsers = _.keys(usersCont);
-    let allVisi = bucket.indexOf("all_visitor_buckets");
-    if (allVisi > -1) bucket.splice(allVisi, 1, ..._allVisi);
-    let allUsers = bucket.indexOf("all_user_buckets");
-    if (allUsers > -1) bucket.splice(allUsers, 1, ..._allUsers);
-    bucket = _.uniq(bucket);
-  } else {
-    bucket = _.keys(buckets);
-  }
-  let staticsBucket = bucket.join(":");
-  let firstBucket = bucket.shift();
-  let Arr = [];
-  intervalTime = intervalTime.replace("hour", "");
-  intervalTime = +intervalTime * 1000 * 60 * 60;
-  intervalTime = 10 * 1000; //TODO: TEST
-  const timeContainer = [];
-  common.uiBeforeComplete(moment().format("dddd, MMMM Do YYYY, h:mm a"));
-  const event = fromEvent(process.stdin, "keypress", (value, key) => ({
-    value: value,
-    key: key || {}
-  }))
-    .pipe(
-      filter(({ key }) => key && key.ctrl && key.name === "x"),
-      take(1)
-    )
-    .subscribe(() => {
-      controller({
-        output: interval,
-        deferred,
-        staticsBucket,
-        client,
-        timeContainer,
-        event
-      });
+  async log() {
+    this.statisticLogs = JSON.parse(
+      await this.client.hget("transferStatics", "auto")
+    );
+    const contain = this.timeContainer.filter(time =>
+      this.statisticLogs[time] && this.statisticLogs[time] !== "fail"
+        ? true
+        : false
+    );
+    this.timeContainer = [];
+    return logReport({
+      buckets: this.statisticLogs,
+      timeContainer: contain.length
+        ? contain
+        : [moment().format("dddd, MMMM Do YYYY, h:mm a")]
     });
-  let interval = setInterval(() => {
+  }
+  dataProvisioner() {
+    this.bucketsFunc = _.assign({}, usersCont, visitorsCont);
+    // ? Deference between auto_all & auto_manual
+    if (this.bucket) {
+      let allVisi = this.bucket.indexOf("all_visitor_buckets");
+      if (allVisi > -1) this.bucket.splice(allVisi, 1, ..._.keys(visitorsCont));
+      let allUsers = this.bucket.indexOf("all_user_buckets");
+      if (allUsers > -1) this.bucket.splice(allUsers, 1, ..._.keys(usersCont));
+      this.bucket = _.uniq(this.bucket);
+    } else {
+      this.bucket = _.keys(this.bucketsFunc);
+    }
+    this.staticsBucket = this.bucket.join(":");
+    this.firstBucket = this.bucket.shift();
+  }
+  statistic() {
+    return {
+      transferSucceed: async time => {
+        let reply;
+        try {
+          reply = await this.client.hget("transferStatics", "auto");
+        } catch (err) {
+          return new Error(
+            errorModel("[AutoTransfer]", "[transferStatics/get]", err)
+          );
+        }
+        reply = reply ? JSON.parse(reply) : {};
+        reply[time] = this.staticsBucket.split(":");
+        try {
+          await this.client.hset(
+            "transferStatics",
+            "auto",
+            JSON.stringify(reply)
+          );
+        } catch (err) {
+          return new Error(
+            errorModel("[AutoTransfer]", "[transferStatics/get]", err)
+          );
+        }
+      },
+      transferFailed: async (reason, time) => {
+        let reply;
+        try {
+          reply = await this.client.hget("transferStatics", "auto");
+        } catch (err) {
+          return errorModel("[AutoTransfer]", "[transferStatics/get]", err);
+        }
+        reply = reply ? JSON.parse(reply) : {};
+        reply[time] = "fail";
+        try {
+          await this.client.hset(
+            "transferStatics",
+            "auto",
+            JSON.stringify(reply)
+          );
+        } catch (err) {
+          return errorModel("[AutoTransfer]", "[transferStatics/set]", err);
+        }
+        return reason.match(/process stopped successfully./gim)
+          ? reason
+          : errorModel("[AutoTransfer]", "[StoreToDB]", reason);
+      }
+    };
+  }
+  events() {
+    fromEvent(process.stdin, "keypress", (value, key) => ({
+      value: value,
+      key: key || {}
+    }))
+      .pipe(
+        filter(({ key }) => key && key.ctrl && key.name === "x"),
+        mergeMap(() => iif(() => this.stopEvent, EMPTY, of("stop"))),
+        take(1)
+      )
+      .subscribe(async () =>
+        this.deferred.resolve({
+          output: this.interval,
+          statisticLogs: await this.log()
+        })
+      );
+  }
+  run() {
+    this.Arr = [];
     let time = moment().format("dddd, MMMM Do YYYY, h:mm a");
-    console.log(ui.horizontalLine);
     console.log(
-      clc.black.bold.bgYellow("[ Data Transfer ]"),
+      ui.horizontalLine + "\n" + col.black.bold.bgYellow("[ Data Transfer ]"),
       "Start At:\t",
       time + "\n"
     );
-    timeContainer.push(time);
-    Arr.push(buckets[firstBucket](client));
-    _.forEach(bucket, elem => {
-      let arrLength = Arr.length - 1;
-      let currentBucket = buckets[elem];
-      Arr.push(Arr[arrLength].then(currentBucket));
-      Arr.shift();
+
+    this.timeContainer.push(time);
+    this.stopEvent = true;
+    this.Arr.push(this.bucketsFunc[this.firstBucket](this.client));
+    _.forEach(this.bucket, elem => {
+      let arrLength = this.Arr.length - 1;
+      let currentBucket = this.bucketsFunc[elem];
+      this.Arr.push(this.Arr[arrLength].then(currentBucket));
+      this.Arr.shift();
     });
-    Arr[0]
+    this.Arr[0]
       .then(
         async () =>
-          await statistic.successTransferredStatistic(
-            client,
-            staticsBucket,
-            time
-          )
+          await this.statistic()
+            .transferSucceed(time)
+            .then(() => (this.stopEvent = false))
       )
       .catch(
         async err =>
-          await statistic
-            .failTransferredStatistic(err, client, time)
-            .then(async err => {
-              console.log(err);
-              deferred.reject({ err, interval, event });
-            })
-            .catch(err => {
-              console.log(err);
-              deferred.reject({ err, interval, event });
-            })
+          await this.statistic()
+            .transferFailed(err, time)
+            .then(async message =>
+              this.deferred.reject({
+                message,
+                logs: await this.log(),
+                interval: this.interval
+              })
+            )
       );
-  }, intervalTime);
-  return deferred.promise;
+  }
+  master() {
+    this.deferred = Q.defer();
+    this.dataProvisioner();
+    common.uiBeforeComplete(moment().format("dddd, MMMM Do YYYY, h:mm a"));
+    this.intervalTime = 10 * 1000; //TODO: TEST
+    this.interval = setInterval(() => this.run(), this.intervalTime);
+    this.events();
+    return this.deferred.promise;
+  }
 };
+// arg = { redis, bucket, intervalTime }
+module.exports = arg => new mainClass(arg).master();

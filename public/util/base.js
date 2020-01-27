@@ -1,6 +1,7 @@
 const cliWidth = require("cli-width"),
   ttys = require("ttys");
 const clc = require("chalk");
+
 class BaseUI {
   constructor() {
     this.width = cliWidth({
@@ -18,13 +19,15 @@ class BaseUI {
     if (width > this.width) width = this.width + 15;
     let leftPadding = Math.floor((width - str.length) / 2);
     let line = "";
-    for (let i = 0; i < leftPadding; i++) { line += " "; }
+    for (let i = 0; i < leftPadding; i++) {
+      line += " ";
+    }
     line += str;
     console.log(line);
   }
   horizontalLine(width = this.width) {
     if (width > this.width) width = this.width;
-    console.log(col.bold("-".repeat(width)))
+    console.log(col.bold("-".repeat(width)));
   }
   verticalSpace() {
     console.log("\n");

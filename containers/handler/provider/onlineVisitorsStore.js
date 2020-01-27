@@ -7,7 +7,7 @@ const {
   onlineVisitorsList
 } = require("../../../database/model/visitors");
 const { errorModel } = require("../../../helpers");
-const UILog = require("./ui");
+const UILog = require("./handler/UI_handler");
 
 const fetchDataFromRedis = ({ client, config }) => {
   let deferred = Q.defer();

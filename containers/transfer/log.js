@@ -1,6 +1,6 @@
 const { Line } = require("clui"),
-  clc = require("cli-color");
-// { ui } = require("../../helpers");
+  clc = require("cli-color"),
+  { ui } = require("../../helpers");
 ///////////////////////////////////////////////////
 /* Test Purpose*/
 // const buckets = {
@@ -86,11 +86,11 @@ class LogReport {
     return container.join("\n");
   }
   buildLog() {
-    // console.log(
-    //   ui.horizontalLine + "\n",
-    //   ui.centralize(col.bold("Data Transfer Statistic"))
-    // );
-    let content = this.headers();
+    let content = ui.horizontalLine;
+    content += "\n";
+    content += ui.centralize(col.bold("Data Transfer Statistic"));
+    content += "\n";
+    content += this.headers();
     for (let j = 0; j < this.timeContainer.length; j++) {
       content += this.firstLine(j);
       if (

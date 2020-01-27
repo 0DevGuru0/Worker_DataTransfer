@@ -4,7 +4,7 @@ const { fromEvent } = require("rxjs");
 const fig = require("figures");
 const { filter, take } = require("rxjs/operators");
 
-const { ui, loading } = require("../../../helpers");
+const { ui, loading } = require("../../../../helpers");
 const _stopOrder = new WeakMap();
 module.exports = class UILog {
   constructor(props) {

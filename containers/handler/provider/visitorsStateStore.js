@@ -1,16 +1,15 @@
 const moment = require("moment");
 const _ = require("lodash");
 const Q = require("q");
-const col = require("chalk");
-const fig = require("figures");
-const UILog = require("./ui");
-const { loading, errorModel } = require("../../../helpers");
+const UILog = require("./handler/UI_handler");
+const { errorModel } = require("../../../helpers");
 const {
   MainState,
   MonthState,
   DayState,
   Visitors
 } = require("../../../database/model/visitors");
+const FetchData = require("./handler/FetchData");
 
 const cityConverter = cityContainer =>
   _.transform(
@@ -21,79 +20,6 @@ const cityConverter = cityContainer =>
       ),
     []
   );
-
-function FetchData(client) {
-  this.client = client;
-  this.dayStateContainer = (async function iterate(count = 0, client) {
-    let DayStateContainer = await client.hscan(
-      "visitors:state",
-      count,
-      "count",
-      2000
-    );
-    return +DayStateContainer[0] === 0
-      ? DayStateContainer[1].filter((el, index) => {
-          if (index % 2 === 0) return true;
-        })
-      : iterate(+DayStateContainer[0]);
-  })(0, this.client);
-  return {
-    fetchCurrentMonthData: async (Year, Month) => {
-      let monthCountryState = await this.client.hgetall(
-        `visitors:state:country:month:${Year}:${Month}`
-      );
-      let monthCityState = await this.client.hgetall(
-        `visitors:state:city:month:${Year}:${Month}`
-      );
-      return { monthCountryState, monthCityState };
-    },
-    fetchYearData: async Year => {
-      let countryState = await this.client.hgetall(
-        `visitors:state:country:year:${Year}`
-      );
-      let cityState = await this.client.hgetall(
-        `visitors:state:city:year:${Year}`
-      );
-      return { countryState, cityState };
-    },
-    fetchOtherMonthsData: async (Year, Month) => {
-      let monthCountryState = await this.client.hgetall(
-        `visitors:state:country:month:${Year}:${Month}`
-      );
-      let monthCityState = await this.client.hgetall(
-        `visitors:state:city:month:${Year}:${Month}`
-      );
-      return { monthCountryState, monthCityState };
-    },
-    fetchDaysData: async () => {
-      return await this.client.hgetall("visitors:state");
-    },
-    deleteMonthData: async (Year, Month) => {
-      //TODO: TEST
-      console.log("DELETE:::", `visitors:state:city:month:${Year}:${Month}`);
-      console.log("DELETE:::", `visitors:state:country:month:${Year}:${Month}`);
-      // await this.client.del(`visitors:state:city:month:${Year}:${Month}`)
-      // await this.client.del(`visitors:state:country:month:${Year}:${Month}`)
-    },
-    deleteYearData: async Year => {
-      //TODO: TEST
-      console.log("DELETE:::", `visitors:state:city:year:${Year}`);
-      console.log("DELETE:::", `visitors:state:country:year:${Year}`);
-      // await this.client.del(`visitors:state:city:year:${Year}`)
-      // await this.client.del(`visitors:state:country:year:${Year}`)
-    },
-    deleteDaysData: async (Year, Month) => {
-      let dayState = await this.dayStateContainer;
-      let keys = dayState.filter(el => {
-        let regex = new RegExp(Year + "/" + Month + "/\\d{1,2}", "g");
-        if (el.match(regex)) return true;
-      });
-      //TODO: TEST
-      if (keys.length) console.log("DELETE:::", "visitors:state", keys);
-      // if(keys.length) await this.client.hdel("visitors:state",...keys)
-    }
-  };
-}
 
 const prepareDataToStore = async ({ fetchData, config }) => {
   let deferred = Q.defer();
@@ -348,66 +274,9 @@ const storeDataToMongoDB = ({ container, config, fetchData }) => {
     );
   return deferred.promise;
 };
-
-// module.exports = ({ client, config }) => {
-//   let deferred = Q.defer();
-//   let load1 = loading.spin1(
-//     `${col.red(
-//       `[${config.logBucket}]`
-//     )} preparing Data for saving into the Database...`
-//   );
-//   let load2 = loading.spin1(
-//     `${col.red(`[${config.logBucket}]`)} Saving Data To Database...`
-//   );
-//   let load3 = loading.spin1(
-//     `${col.red(`[${config.logBucket}]`)} Deleting From RedisDB...`
-//   );
-//   Q({ fetchData: new FetchData(client), config })
-//     .tap(() => load1.start())
-//     .then(prepareDataToStore)
-//     .tap(() => {
-//       load1.stop();
-//       console.log(
-//         col.green(`${fig.tick} [${config.logBucket}]`),
-//         "Prepared Data For Saving Into The Database..."
-//       );
-//       load2.start();
-//     })
-//     .then(storeDataToMongoDB)
-//     .tap(() => {
-//       load2.stop();
-//       console.log(
-//         col.green(`${fig.tick} [${config.logBucket}]`),
-//         "Saved Data To Database..."
-//       );
-//       load3.start();
-//     })
-//     .then(deleteDataFromRedisDB)
-//     .tap(() => {
-//       load3.stop();
-//       console.log(
-//         _.join(
-//           [
-//             col.green(`${fig.tick} [${config.logBucket}]`),
-//             " Data Deleted From Redis..."
-//           ],
-//           ""
-//         )
-//       );
-//     })
-//     .then(deferred.resolve)
-//     .catch(err => {
-//       load3.stop();
-//       load1.stop();
-//       load2.stop();
-//       deferred.reject(err);
-//     });
-//   return deferred.promise;
-// };
-
 module.exports = ({ client, config }) =>
   new UILog({ config, client }).master({
-    Initial: { fetchData: new FetchData(client), config },
+    Initial: { fetchData: new FetchData({ client }), config },
     Prepare: prepareDataToStore,
     Save: storeDataToMongoDB,
     Delete: deleteDataFromRedisDB

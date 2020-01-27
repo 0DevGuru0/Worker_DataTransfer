@@ -1,4 +1,3 @@
-const col = require("chalk");
 const Q = require("q");
 const _ = require("lodash");
 const moment = require("moment");
@@ -7,21 +6,8 @@ const asyncRedis = require("async-redis");
 const { usersCont, visitorsCont } = require("../handler");
 const common = require("./common");
 let time = moment().format("dddd, MMMM Do YYYY, h:mm a");
-const transferredReport = staticsBucket => {
-  return (
-    ui.horizontalLine +
-    "\n" +
-    ui.centralize(col.bold("Data Transfer statistic")) +
-    "\n" +
-    col.bold.bgGreen("Transferred Buckets:") +
-    "\n\t" +
-    staticsBucket.replace(/:/gi, "\n\t") +
-    "\n" +
-    col.bold.bgGreen("Transferred Time:") +
-    "\n\t" +
-    time
-  );
-};
+const logReport = require("./log");
+
 function FetchData(client) {
   this.client = client;
   this.bucket = "transferStatics";
@@ -80,8 +66,9 @@ const saveFunction = ({ fetch, Arr, staticsBucket }) => {
   let deferred = Q.defer();
   Arr[0]
     .then(async () => {
+      let reply;
       try {
-        let reply = await fetch.getTransferStaticsData();
+        reply = await fetch.getTransferStaticsData();
         reply[time] = staticsBucket.split(":");
         await fetch.setTransferStaticsData(reply);
       } catch (err) {
@@ -89,7 +76,7 @@ const saveFunction = ({ fetch, Arr, staticsBucket }) => {
           errorModel("ManualTransfer", "StoreTransferStatics", err)
         );
       }
-      deferred.resolve(transferredReport(time, staticsBucket));
+      deferred.resolve(logReport({ buckets: reply, timeContainer: [time] }));
     })
     .catch(async reason => {
       if (reason) deferred.reject(reason);

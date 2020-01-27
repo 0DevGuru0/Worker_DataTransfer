@@ -4,7 +4,7 @@ const moment = require("moment"),
   col = require("chalk"),
   { PageViews, Visitors } = require("../../../database/model/visitors"),
   { errorModel } = require("../../../helpers");
-const UILog = require("./ui");
+const UILog = require("./handler/UI_handler");
 const fetchDataFromRedis = ({ client, config }) => {
   let deferred = Q.defer();
   client
