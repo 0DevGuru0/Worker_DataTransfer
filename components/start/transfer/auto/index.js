@@ -20,12 +20,17 @@ module.exports = () => {
           if (res instanceof Object && res.interval) {
             this.mainInterval = res.interval;
             this.logs = res.logs;
+            this.intErr = res.intErr;
+            this.extErr = res.extErr;
+          } else {
+            console.log(res.message || res);
           }
-          console.log(res instanceof Object ? res.message : res);
         })
         .finally(async () => {
+          if (this.extErr) console.log(this.extErr);
           if (this.logs) console.log(this.logs);
           console.log(ui.horizontalLine);
+          if (this.intErr) console.log(this.intErr);
           if (this.mainInterval) await clearInterval(this.mainInterval);
           if (this.mongoose && this.mongoose.connection.readyState == 1)
             await disconnectFromDBs({

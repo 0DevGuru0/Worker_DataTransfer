@@ -21,21 +21,10 @@ const mainClass = class AutoTransfer {
     this.timeContainer = [];
   }
   async log() {
-    this.statisticLogs = JSON.parse(
-      await this.client.hget("transferStatics", "auto")
-    );
-    const contain = this.timeContainer.filter(time =>
-      this.statisticLogs[time] && this.statisticLogs[time] !== "fail"
-        ? true
-        : false
-    );
+    let buckets = JSON.parse(await this.client.hget("transferStatics", "auto"));
+    let timeContainer = this.timeContainer;
     this.timeContainer = [];
-    return logReport({
-      buckets: this.statisticLogs,
-      timeContainer: contain.length
-        ? contain
-        : [moment().format("dddd, MMMM Do YYYY, h:mm a")]
-    });
+    return logReport({ buckets, timeContainer });
   }
   dataProvisioner() {
     this.bucketsFunc = _.assign({}, usersCont, visitorsCont);
@@ -78,26 +67,33 @@ const mainClass = class AutoTransfer {
         }
       },
       transferFailed: async (reason, time) => {
+        let { err, setState } = reason;
         let reply;
         try {
           reply = await this.client.hget("transferStatics", "auto");
-        } catch (err) {
-          return errorModel("[AutoTransfer]", "[transferStatics/get]", err);
+        } catch (error) {
+          return {
+            extErr: err,
+            intErr: errorModel("[AutoTransfer]", "[transferStatics/get]", error)
+          };
         }
+
         reply = reply ? JSON.parse(reply) : {};
-        reply[time] = "fail";
+        reply[time] = setState;
+
         try {
           await this.client.hset(
             "transferStatics",
             "auto",
             JSON.stringify(reply)
           );
-        } catch (err) {
-          return errorModel("[AutoTransfer]", "[transferStatics/set]", err);
+        } catch (error) {
+          return {
+            extErr: err,
+            intErr: errorModel("[AutoTransfer]", "[transferStatics/get]", error)
+          };
         }
-        return reason.match(/process stopped successfully./gim)
-          ? reason
-          : errorModel("[AutoTransfer]", "[StoreToDB]", reason);
+        return { extErr: err, intErr: null };
       }
     };
   }
@@ -129,7 +125,7 @@ const mainClass = class AutoTransfer {
 
     this.timeContainer.push(time);
     this.stopEvent = true;
-    this.Arr.push(this.bucketsFunc[this.firstBucket](this.client));
+    this.Arr.push(this.bucketsFunc[this.firstBucket]({ client: this.client }));
     _.forEach(this.bucket, elem => {
       let arrLength = this.Arr.length - 1;
       let currentBucket = this.bucketsFunc[elem];
@@ -147,13 +143,14 @@ const mainClass = class AutoTransfer {
         async err =>
           await this.statistic()
             .transferFailed(err, time)
-            .then(async message =>
+            .then(async ({ extErr, intErr }) => {
               this.deferred.reject({
-                message,
+                extErr,
+                intErr,
                 logs: await this.log(),
                 interval: this.interval
-              })
-            )
+              });
+            })
       );
   }
   master() {

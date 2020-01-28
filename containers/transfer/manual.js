@@ -79,26 +79,24 @@ const saveFunction = ({ fetch, Arr, staticsBucket }) => {
       );
     })
     .catch(async ({ err, setState }) => {
-      if (err) {
-        let logs = logReport({
-          buckets: { [time]: setState },
-          timeContainer: [time]
-        });
-        deferred.reject({ err, logs });
-      }
+      // 🤔 Save statisticLogs to DB
+      const logs = await logReport({
+        buckets: { [time]: setState },
+        timeContainer: [time]
+      });
       try {
         let reply = await fetch.getTransferStaticsData();
         reply[time] = "fail";
         await fetch.setTransferStaticsData(reply);
       } catch (fetchError) {
         deferred.reject({
+          mainErr: err,
           err: errorModel("ManualTransfer", "StoreTransferStatics", fetchError),
-          logs: logReport({
-            buckets: { [time]: setState },
-            timeContainer: [time]
-          })
+          logs
         });
       }
+      // 🤔 Return err after success store
+      deferred.reject({ mainErr: err, err: null, logs });
     });
   return deferred.promise;
 };

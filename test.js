@@ -58,11 +58,13 @@ class LogReport {
       .contents();
   }
   firstLine(f) {
+    console.log();
     return new Line()
       .column(this.timeContainer[f], this.timeColSize)
       .padding(this.paddingSize)
       .column(
         this.buckets[this.timeContainer[f]] &&
+          this.buckets[this.timeContainer[f]].length &&
           this.buckets[this.timeContainer[f]] !== "fail"
           ? this.buckets[this.timeContainer[f]][0]
           : "No Buckets",
@@ -86,11 +88,11 @@ class LogReport {
     return container.join("\n");
   }
   buildLog() {
-    // console.log(
-    //   ui.horizontalLine + "\n",
-    //   ui.centralize(col.bold("Data Transfer Statistic"))
-    // );
-    let content = this.headers();
+    // let content = ui.horizontalLine;
+    // content += "\n";
+    // content += ui.centralize(col.bold("Data Transfer Statistic"));
+    let content = "\n";
+    content += this.headers();
     for (let j = 0; j < this.timeContainer.length; j++) {
       content += this.firstLine(j);
       if (
@@ -104,4 +106,4 @@ class LogReport {
   }
 }
 
-module.exports = props => new LogReport(props).buildLog();
+console.log(new LogReport(props).buildLog());

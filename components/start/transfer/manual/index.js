@@ -13,10 +13,17 @@ module.exports = () => {
         })
         .then(() => ManualTransfer(this.redis, bucket))
         .then(console.log)
-        .catch(({ err, logs }) => {
-          console.log(err instanceof Object ? err.message : err);
-          if (logs) console.log(logs);
+        .catch(error => {
+          if (error instanceof Object && error.logs) {
+            let { mainErr, err, logs } = error;
+            if (mainErr) console.log(mainErr);
+            if (logs) console.log(logs);
+            if (err) console.log(err);
+          } else {
+            console.log(err instanceof Object ? err.message : err);
+          }
         })
+
         .finally(async () => {
           console.log(ui.horizontalLine);
           if (this.mongoose && this.mongoose.connection.readyState == 1)

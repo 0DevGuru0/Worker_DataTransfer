@@ -1,43 +1,52 @@
 const Q = require("q");
 const chalk = require("chalk");
-const {usersStore} = require("./provider");
-const {ui} = require('../../helpers')
+const { usersStore } = require("./provider");
+const { ui } = require("../../helpers");
 
 const container = {
-  onlineUsersList: client => {
+  onlineUsersList: ({ client, setState = [] }) => {
     var deferred = Q.defer();
     let config = {
       redisBucket: "online:users:TList",
       logBucket: "onlineUsersList",
       collectionName: "onlineCount"
     };
-    usersStore({config,client})      
-      .then(_ => deferred.resolve(client))
-      .catch(deferred.reject);
+    usersStore({ config, client })
+      .then(_ => {
+        setState.push("onlineUsersList");
+        deferred.resolve({ client, setState });
+      })
+      .catch(err => deferred.reject({ err, setState }));
     return deferred.promise;
   },
-  totalUsersVerified: client => {
+  totalUsersVerified: ({ client, setState = [] }) => {
     var deferred = Q.defer();
     let config = {
       redisBucket: "total:Verified:UserList",
       logBucket: "totalUsersVerified",
       collectionName: "totalVerifiedUsers"
     };
-    usersStore({config,client})      
-      .then(_ => deferred.resolve(client))
-      .catch(deferred.reject);
+    usersStore({ config, client })
+      .then(_ => {
+        setState.push("totalUsersVerified");
+        deferred.resolve({ client, setState });
+      })
+      .catch(err => deferred.reject({ err, setState }));
     return deferred.promise;
   },
-  totalUsersList: client => {
+  totalUsersList: ({ client, setState = [] }) => {
     var deferred = Q.defer();
     let config = {
       redisBucket: "total:users:TList",
       logBucket: "totalUsersList",
       collectionName: "totalUsers"
     };
-    usersStore({config,client})      
-      .then(_ => deferred.resolve(client))
-      .catch(deferred.reject);
+    usersStore({ config, client })
+      .then(_ => {
+        setState.push("totalUsersList");
+        deferred.resolve({ client, setState });
+      })
+      .catch(err => deferred.reject({ err, setState }));
     return deferred.promise;
   }
 };

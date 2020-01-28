@@ -1,4 +1,5 @@
 const { Line } = require("clui"),
+  moment = require("moment"),
   clc = require("cli-color"),
   { ui } = require("../../helpers");
 ///////////////////////////////////////////////////
@@ -38,7 +39,9 @@ class LogReport {
     this.bucketColSize = 20;
     this.paddingSize = 1;
     this.buckets = props.buckets;
-    this.timeContainer = props.timeContainer;
+    this.timeContainer = props.timeContainer.length
+      ? props.timeContainer
+      : [moment().format("dddd, MMMM Do YYYY, h:mm a")];
   }
   headers() {
     return new Line()
@@ -63,6 +66,7 @@ class LogReport {
       .padding(this.paddingSize)
       .column(
         this.buckets[this.timeContainer[f]] &&
+          this.buckets[this.timeContainer[f]].length &&
           this.buckets[this.timeContainer[f]] !== "fail"
           ? this.buckets[this.timeContainer[f]][0]
           : "No Buckets",
