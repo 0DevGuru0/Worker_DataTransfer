@@ -27,7 +27,6 @@ function FetchData(client) {
     }
   };
 }
-
 const store = Q.fbind(({ fetch, bucket, client }) => {
   let { staticsBucket, Arr } = prepareData({ bucket, client });
   return saveFunction({
@@ -50,7 +49,7 @@ const prepareData = ({ bucket, client }) => {
   let firstBucket = bucket.shift();
   let Arr = [];
 
-  Arr.push(buckets[firstBucket](client));
+  Arr.push(buckets[firstBucket]({ client }));
   _.forEach(bucket, elem => {
     let arrLength = Arr.length - 1;
     let currentBucket = buckets[elem];
@@ -61,11 +60,10 @@ const prepareData = ({ bucket, client }) => {
   console.log(ui.horizontalLine);
   return { staticsBucket, Arr };
 };
-
 const saveFunction = ({ fetch, Arr, staticsBucket }) => {
   let deferred = Q.defer();
   Arr[0]
-    .then(async () => {
+    .then(async ({ setState }) => {
       let reply;
       try {
         reply = await fetch.getTransferStaticsData();
@@ -76,18 +74,30 @@ const saveFunction = ({ fetch, Arr, staticsBucket }) => {
           errorModel("ManualTransfer", "StoreTransferStatics", err)
         );
       }
-      deferred.resolve(logReport({ buckets: reply, timeContainer: [time] }));
+      deferred.resolve(
+        logReport({ buckets: { [time]: setState }, timeContainer: [time] })
+      );
     })
-    .catch(async reason => {
-      if (reason) deferred.reject(reason);
+    .catch(async ({ err, setState }) => {
+      if (err) {
+        let logs = logReport({
+          buckets: { [time]: setState },
+          timeContainer: [time]
+        });
+        deferred.reject({ err, logs });
+      }
       try {
         let reply = await fetch.getTransferStaticsData();
         reply[time] = "fail";
         await fetch.setTransferStaticsData(reply);
-      } catch (err) {
-        deferred.reject(
-          errorModel("ManualTransfer", "StoreTransferStatics", err)
-        );
+      } catch (fetchError) {
+        deferred.reject({
+          err: errorModel("ManualTransfer", "StoreTransferStatics", fetchError),
+          logs: logReport({
+            buckets: { [time]: setState },
+            timeContainer: [time]
+          })
+        });
       }
     });
   return deferred.promise;

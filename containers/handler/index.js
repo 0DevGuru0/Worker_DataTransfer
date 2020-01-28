@@ -1,4 +1,4 @@
-const { usersCont, usersWorker } = require("./users");
+const { usersCont, usersWorker } = require("./test");
 const { visitorsCont, visitorsWorker } = require("./visitors");
 module.exports = {
   usersCont,
