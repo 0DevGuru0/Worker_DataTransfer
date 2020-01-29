@@ -15,23 +15,25 @@ module.exports = () => {
         .then(console.log)
         .catch(error => {
           if (error instanceof Object && error.logs) {
-            let { mainErr, err, logs } = error;
+            const { mainErr, err, logs } = error;
             if (mainErr) console.log(mainErr);
             if (logs) console.log(logs);
             if (err) console.log(err);
           } else {
-            console.log(err instanceof Object ? err.message : err);
+            console.log(error instanceof Object ? error.message : error);
           }
         })
 
         .finally(async () => {
           console.log(ui.horizontalLine);
-          if (this.mongoose && this.mongoose.connection.readyState == 1)
+          if (this.mongoose && this.mongoose.connection.readyState === 1)
             await disconnectFromDBs({
               mongoose: this.mongoose,
               redis: this.redis,
               init: this.init
-            }).then(() => (this.init = false));
+            }).then(() => {
+              this.init = false;
+            });
         }),
     initialize: () => (this.init ? true : false),
     stop: () =>
@@ -39,6 +41,8 @@ module.exports = () => {
         mongoose: this.mongoose,
         redis: this.redis,
         init: this.init
-      }).then(() => (this.init = false))
+      }).then(() => {
+        this.init = false;
+      })
   };
 };

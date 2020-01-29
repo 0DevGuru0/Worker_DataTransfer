@@ -1,12 +1,14 @@
 const Q = require("q");
 const _ = require("lodash");
 const moment = require("moment");
-const { ui, errorModel } = require("../../helpers");
 const asyncRedis = require("async-redis");
-const { usersCont, visitorsCont } = require("../handler");
+
 const common = require("./common");
-let time = moment().format("dddd, MMMM Do YYYY, h:mm a");
+const { ui, errorModel } = require("../../helpers");
+const { usersCont, visitorsCont } = require("../handler");
 const logReport = require("./log");
+
+const time = moment().format("dddd, MMMM Do YYYY, h:mm a");
 
 function FetchData(client) {
   this.client = client;
@@ -18,8 +20,8 @@ function FetchData(client) {
       reply = reply ? JSON.parse(reply) : {};
       return reply;
     },
-    setTransferStaticsData: async reply => {
-      return await this.client.hset(
+    setTransferStaticsData: reply => {
+      return this.client.hset(
         this.bucket,
         this.subBucket,
         JSON.stringify(reply)
@@ -27,32 +29,24 @@ function FetchData(client) {
     }
   };
 }
-const store = Q.fbind(({ fetch, bucket, client }) => {
-  let { staticsBucket, Arr } = prepareData({ bucket, client });
-  return saveFunction({
-    staticsBucket,
-    Arr,
-    fetch,
-    bucket
-  });
-});
+
 const prepareData = ({ bucket, client }) => {
-  let buckets = Object.assign({}, usersCont, visitorsCont);
-  let _allVisi = Object.keys(visitorsCont);
-  let _allUsers = Object.keys(usersCont);
-  let allVisi = bucket.indexOf("all_visitor_buckets");
+  const buckets = { ...usersCont, ...visitorsCont };
+  const _allVisi = Object.keys(visitorsCont);
+  const _allUsers = Object.keys(usersCont);
+  const allVisi = bucket.indexOf("all_visitor_buckets");
   if (allVisi > -1) bucket.splice(allVisi, 1, ..._allVisi);
-  let allUsers = bucket.indexOf("all_user_buckets");
+  const allUsers = bucket.indexOf("all_user_buckets");
   if (allUsers > -1) bucket.splice(allUsers, 1, ..._allUsers);
   bucket = _.uniq(bucket);
-  let staticsBucket = bucket.join(":");
-  let firstBucket = bucket.shift();
-  let Arr = [];
+  const staticsBucket = bucket.join(":");
+  const firstBucket = bucket.shift();
+  const Arr = [];
 
   Arr.push(buckets[firstBucket]({ client }));
   _.forEach(bucket, elem => {
-    let arrLength = Arr.length - 1;
-    let currentBucket = buckets[elem];
+    const arrLength = Arr.length - 1;
+    const currentBucket = buckets[elem];
     Arr.push(Arr[arrLength].then(currentBucket));
     Arr.shift();
   });
@@ -61,7 +55,7 @@ const prepareData = ({ bucket, client }) => {
   return { staticsBucket, Arr };
 };
 const saveFunction = ({ fetch, Arr, staticsBucket }) => {
-  let deferred = Q.defer();
+  const deferred = Q.defer();
   Arr[0]
     .then(async ({ setState }) => {
       let reply;
@@ -85,7 +79,7 @@ const saveFunction = ({ fetch, Arr, staticsBucket }) => {
         timeContainer: [time]
       });
       try {
-        let reply = await fetch.getTransferStaticsData();
+        const reply = await fetch.getTransferStaticsData();
         reply[time] = "fail";
         await fetch.setTransferStaticsData(reply);
       } catch (fetchError) {
@@ -100,9 +94,18 @@ const saveFunction = ({ fetch, Arr, staticsBucket }) => {
     });
   return deferred.promise;
 };
+const store = Q.fbind(({ fetch, bucket, client }) => {
+  const { staticsBucket, Arr } = prepareData({ bucket, client });
+  return saveFunction({
+    staticsBucket,
+    Arr,
+    fetch,
+    bucket
+  });
+});
 module.exports = (redis, bucket) => {
-  let deferred = Q.defer();
-  let client = asyncRedis.decorate(redis);
+  const deferred = Q.defer();
+  const client = asyncRedis.decorate(redis);
   Q({ fetch: FetchData(client), bucket, client })
     .then(store)
     .then(deferred.resolve)

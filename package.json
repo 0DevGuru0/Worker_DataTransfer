@@ -1,5 +1,5 @@
 {
-  "name": "datatransfer",
+  "name": "data-transfer",
   "version": "1.0.0",
   "description": "transfer data from redis to mongodb__ worker__reactProject",
   "main": "index.js",
@@ -10,6 +10,9 @@
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/afsan007/worker_DataTransfer.git"
+  },
+  "engines": {
+    "node": ">=10.0.0"
   },
   "keywords": [
     "worker",
@@ -50,8 +53,10 @@
   },
   "devDependencies": {
     "eslint": "^6.8.0",
+    "eslint-config-airbnb-base": "^14.0.0",
     "eslint-config-node": "^4.0.0",
     "eslint-config-prettier": "^6.9.0",
+    "eslint-plugin-import": "^2.20.0",
     "eslint-plugin-node": "^11.0.0",
     "eslint-plugin-prettier": "^3.1.2",
     "prettier": "^1.19.1"
