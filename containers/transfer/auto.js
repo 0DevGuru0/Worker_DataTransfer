@@ -11,7 +11,7 @@ const { visitorsCont, usersCont } = require("../handler");
 const { ui, errorModel } = require("../../helpers");
 const logReport = require("./log");
 
-const mainClass = class AutoTransfer {
+const MainClass = class AutoTransfer {
   constructor(props) {
     this.bucket = props.bucket;
     this.intervalTime =
@@ -20,12 +20,14 @@ const mainClass = class AutoTransfer {
     this.client = asyncRedis.decorate(props.redis);
     this.timeContainer = [];
   }
+
   async log() {
     let buckets = JSON.parse(await this.client.hget("transferStatics", "auto"));
-    let timeContainer = this.timeContainer;
+    let { timeContainer } = this;
     this.timeContainer = [];
     return logReport({ buckets, timeContainer });
   }
+
   dataProvisioner() {
     this.bucketsFunc = _.assign({}, usersCont, visitorsCont);
     // ? Deference between auto_all & auto_manual
@@ -41,6 +43,7 @@ const mainClass = class AutoTransfer {
     this.staticsBucket = this.bucket.join(":");
     this.firstBucket = this.bucket.shift();
   }
+
   statistic() {
     return {
       transferSucceed: async time => {
@@ -97,9 +100,10 @@ const mainClass = class AutoTransfer {
       }
     };
   }
+
   events() {
     fromEvent(process.stdin, "keypress", (value, key) => ({
-      value: value,
+      value,
       key: key || {}
     }))
       .pipe(
@@ -114,13 +118,14 @@ const mainClass = class AutoTransfer {
         })
       );
   }
+
   run() {
     this.Arr = [];
-    let time = moment().format("dddd, MMMM Do YYYY, h:mm a");
+    let time = moment().format("dddd, MMMM Do YYYY, h:mm:ss a");
     console.log(
-      ui.horizontalLine + "\n" + col.black.bold.bgYellow("[ Data Transfer ]"),
+      `${ui.horizontalLine}\n${col.black.bold.bgYellow("[ Data Transfer ]")}`,
       "Start At:\t",
-      time + "\n"
+      `${time}\n`
     );
 
     this.timeContainer.push(time);
@@ -133,35 +138,36 @@ const mainClass = class AutoTransfer {
       this.Arr.shift();
     });
     this.Arr[0]
-      .then(
-        async () =>
-          await this.statistic()
-            .transferSucceed(time)
-            .then(() => (this.stopEvent = false))
-      )
-      .catch(
-        async err =>
-          await this.statistic()
-            .transferFailed(err, time)
-            .then(async ({ extErr, intErr }) => {
-              this.deferred.reject({
-                extErr,
-                intErr,
-                logs: await this.log(),
-                interval: this.interval
-              });
-            })
-      );
+      .then(async () => {
+        await this.statistic()
+          .transferSucceed(time)
+          .then(() => {
+            this.stopEvent = false;
+          });
+      })
+      .catch(async err => {
+        await this.statistic()
+          .transferFailed(err, time)
+          .then(async ({ extErr, intErr }) => {
+            this.deferred.reject({
+              extErr,
+              intErr,
+              logs: await this.log(),
+              interval: this.interval
+            });
+          });
+      });
   }
+
   master() {
     this.deferred = Q.defer();
     this.dataProvisioner();
     common.uiBeforeComplete(moment().format("dddd, MMMM Do YYYY, h:mm a"));
-    this.intervalTime = 10 * 1000; //TODO: TEST
+    this.intervalTime = 10 * 1000; // TODO: TEST
     this.interval = setInterval(() => this.run(), this.intervalTime);
     this.events();
     return this.deferred.promise;
   }
 };
 // arg = { redis, bucket, intervalTime }
-module.exports = arg => new mainClass(arg).master();
+module.exports = arg => new MainClass(arg).master();

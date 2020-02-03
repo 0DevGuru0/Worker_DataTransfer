@@ -1,12 +1,12 @@
-const Q = require("q"),
-  _ = require("lodash"),
-  moment = require("moment");
+const Q = require("q");
+const _ = require("lodash");
+const moment = require("moment");
 
 const {
   Users,
-  onlineUsersCount,
-  totalUsersCount,
-  totalVerifiedUsersCount
+  OnlineUsersCount,
+  TotalUsersCount,
+  TotalVerifiedUsersCount
 } = require("../../../database/model/users");
 const { errorModel } = require("../../../helpers");
 const UILog = require("./handler/UI_handler");
@@ -37,7 +37,7 @@ const prepareDataToStore = async ({ fetchData, config }) => {
     }
     return Obj;
   };
-  let TempObj = async (contain, reply, el, midContain) => {
+  let TempObj = async (contain, reply, el) => {
     let midObj = {};
     let slimObj = await TempObj_small(contain, reply, el);
     midObj.Year = +contain[0];
@@ -47,6 +47,7 @@ const prepareDataToStore = async ({ fetchData, config }) => {
     midContain.push(midObj);
   };
   let delKeys = [];
+  /* eslint no-await-in-loop: "off" */
   for (let el in reply) {
     if (moment(el, "YYYY/MM/DD").isBefore(moment(), "month")) {
       let contain = el.split("/");
@@ -75,6 +76,70 @@ const prepareDataToStore = async ({ fetchData, config }) => {
     Input: midContain, config, delKeys, fetchData
     Output: config, delKeys, fetchData
 */
+// const storeDataToMongoDB = async ({
+//   midContain,
+//   config,
+//   delKeys,
+//   fetchData
+// }) => {
+//   let deferred = Q.defer();
+//   let arrLength = midContain.length;
+//   let modelContainer = [];
+//   if (arrLength === 0)
+//     deferred.reject(
+//       errorModel(
+//         config.logBucket,
+//         "storeDataToMongoDB",
+//         "Nothing prepared to store in mongodb"
+//       )
+//     );
+//   for (let i = 0; i < arrLength; i++) {
+//     let smallContain = midContain[i];
+//     let user;
+//     try {
+//       user = await Users.findOne({
+//         Year: smallContain.Year,
+//         Month: smallContain.Month
+//       });
+//     } catch (err) {
+//       deferred.reject(errorModel(config.logBucket, "storeDataToMongoDB", err));
+//     }
+
+//     let userModel = user
+//       ? user
+//       : new Users({ Year: smallContain.Year, Month: smallContain.Month });
+//     let CountModel = null;
+//     if (config.collectionName === "onlineCount") {
+//       CountModel = new OnlineUsersCount({
+//         Days: smallContain[config.collectionName]
+//       });
+//     } else if (config.collectionName === "totalUsers") {
+//       CountModel = new TotalUsersCount({
+//         Days: smallContain[config.collectionName]
+//       });
+//     } else if (config.collectionName === "totalVerifiedUsers") {
+//       CountModel = new TotalVerifiedUsersCount({
+//         Days: smallContain[config.collectionName]
+//       });
+//     } else {
+//       deferred.reject(
+//         errorModel(
+//           config.logBucket,
+//           "storeDataToMongoDB",
+//           "Collection Couldn't Found,Make Sure Typed CollectionName correctly"
+//         )
+//       );
+//     }
+//     userModel[config.collectionName].push(CountModel);
+//     modelContainer.push(userModel, CountModel);
+//   }
+//   Promise.all(modelContainer.map(el => el.save()))
+//     .then(_ => deferred.resolve({ config, delKeys, fetchData }))
+//     .catch(err =>
+//       deferred.reject(errorModel(config.logBucket, "storeDataToMongoDB", err))
+//     );
+//   return deferred.promise;
+// };
 const storeDataToMongoDB = async ({
   midContain,
   config,
@@ -83,7 +148,6 @@ const storeDataToMongoDB = async ({
 }) => {
   let deferred = Q.defer();
   let arrLength = midContain.length;
-  let modelContainer = [];
   if (arrLength === 0)
     deferred.reject(
       errorModel(
@@ -92,54 +156,65 @@ const storeDataToMongoDB = async ({
         "Nothing prepared to store in mongodb"
       )
     );
-  for (let i = 0; i < arrLength; i++) {
-    let smallContain = midContain[i];
-    let user;
-    try {
-      user = await Users.findOne({
+  let forContainer = [];
+  const modelFunc = i =>
+    new Promise((res, rej) => {
+      let smallContain = midContain[i];
+      Users.findOne({
         Year: smallContain.Year,
         Month: smallContain.Month
+      })
+        .then(user => res({ user, smallContain }))
+        .catch(rej);
+    });
+  for (let i = 0; i < arrLength; i++) forContainer.push(modelFunc(i));
+  await Promise.all(forContainer)
+    .then(async users => {
+      let modelContainer = [];
+      _.forEach(users, ({ user, smallContain }) => {
+        let userModel = user
+          ? user
+          : new Users({ Year: smallContain.Year, Month: smallContain.Month });
+        let CountModel;
+        switch (config.collectionName) {
+          case "onlineCount":
+            CountModel = new OnlineUsersCount({
+              Days: smallContain[config.collectionName]
+            });
+            break;
+          case "totalUsers":
+            CountModel = new TotalUsersCount({
+              Days: smallContain[config.collectionName]
+            });
+            break;
+          case "totalVerifiedUsers":
+            CountModel = new TotalVerifiedUsersCount({
+              Days: smallContain[config.collectionName]
+            });
+            break;
+          default:
+            throw new Error(
+              "Collection Couldn't Found,Make Sure Typed CollectionName correctly"
+            );
+        }
+        userModel[config.collectionName].push(CountModel);
+        modelContainer.push(userModel, CountModel);
       });
-    } catch (err) {
-      deferred.reject(errorModel(config.logBucket, "storeDataToMongoDB", err));
-    }
-
-    let userModel = user
-      ? user
-      : new Users({ Year: smallContain.Year, Month: smallContain.Month });
-    let CountModel = null;
-    if (config.collectionName === "onlineCount") {
-      CountModel = new onlineUsersCount({
-        Days: smallContain[config.collectionName]
-      });
-    } else if (config.collectionName === "totalUsers") {
-      CountModel = new totalUsersCount({
-        Days: smallContain[config.collectionName]
-      });
-    } else if (config.collectionName === "totalVerifiedUsers") {
-      CountModel = new totalVerifiedUsersCount({
-        Days: smallContain[config.collectionName]
-      });
-    } else {
-      deferred.reject(
-        errorModel(
-          config.logBucket,
-          "storeDataToMongoDB",
-          "Collection Couldn't Found,Make Sure Typed CollectionName correctly"
-        )
-      );
-    }
-    userModel[config.collectionName].push(CountModel);
-    modelContainer.push(userModel, CountModel);
-  }
-  Promise.all(modelContainer.map(el => el.save()))
-    .then(_ => deferred.resolve({ config, delKeys, fetchData }))
+      if (modelContainer.length === 0)
+        throw new Error("Nothing has been exist to store to Mongodb...");
+      await Promise.all(modelContainer.map(el => el.save()))
+        .then(() => deferred.resolve({ config, delKeys, fetchData }))
+        .catch(err => {
+          console.log(err);
+          throw new Error(err);
+        });
+    })
     .catch(err =>
       deferred.reject(errorModel(config.logBucket, "storeDataToMongoDB", err))
     );
+
   return deferred.promise;
 };
-
 /*  deleteDataFromRedisDB <Function>
     Input: fetchData, config, delKeys
     Output: result

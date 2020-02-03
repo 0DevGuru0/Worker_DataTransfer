@@ -1,7 +1,7 @@
-const { Line } = require("clui"),
-  moment = require("moment"),
-  clc = require("cli-color"),
-  { ui } = require("../../helpers");
+const { Line } = require("clui");
+const moment = require("moment");
+const clc = require("cli-color");
+const { ui } = require("../../helpers");
 ///////////////////////////////////////////////////
 /* Test Purpose*/
 // const buckets = {

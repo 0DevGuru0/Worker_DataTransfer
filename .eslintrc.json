@@ -1,6 +1,7 @@
 {
   "extends": ["airbnb-base", "prettier", "plugin:node/recommended"],
-  "plugins": ["prettier"],
+  "plugins": ["prettier", "promise"],
+  "parser": "babel-eslint",
   "rules": {
     "prettier/prettier": "error",
     "no-unused-vars": "warn",
@@ -10,6 +11,10 @@
     "class-methods-use-this": "off",
     "no-unneeded-ternary": "off",
     "no-underscore-dangle": "off",
-    "no-param-reassign": "off"
+    "no-param-reassign": "off",
+    "prefer-const": "off",
+    "camelcase": "off",
+    "no-plusplus": ["error", { "allowForLoopAfterthoughts": true }],
+    "no-restricted-syntax": "off"
   }
 }

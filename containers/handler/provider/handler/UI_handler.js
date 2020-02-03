@@ -5,6 +5,7 @@ const fig = require("figures");
 const { filter, take } = require("rxjs/operators");
 
 const { ui, loading } = require("../../../../helpers");
+
 const _stopOrder = new WeakMap();
 module.exports = class UILog {
   constructor(props) {
@@ -16,6 +17,7 @@ module.exports = class UILog {
     this.spinners();
     this.events();
   }
+
   spinners() {
     this.load1 = loading.spin1(
       `${col.red(
@@ -29,9 +31,10 @@ module.exports = class UILog {
       `${col.red(`[${this.logBucket}]`)} Deleting From RedisDB...`
     );
   }
+
   events() {
     this.ev = fromEvent(process.stdin, "keypress", (value, key) => ({
-      value: value,
+      value,
       key: key || {}
     }))
       .pipe(
@@ -46,39 +49,56 @@ module.exports = class UILog {
         _stopOrder.set(this, true);
       });
   }
+
   initialLog() {
     this.load1.start();
     if (_stopOrder.get(this)) throw new Error("SIGSTOP");
   }
+
   preparedDataLog() {
     this.load1.stop();
     console.log(this.initiate, "Prepared Data For Saving Into The Database...");
     this.load2.start();
     if (_stopOrder.get(this)) throw new Error("SIGSTOP");
   }
+
   storedDataLog() {
     this.load2.stop();
     console.log(this.initiate, "Saved Data To Database...");
     this.load3.start();
     if (_stopOrder.get(this)) throw new Error("SIGSTOP");
   }
+
   deletedDataLog() {
     this.load3.stop();
     console.log(`${this.initiate} Data Deleted From Redis...`);
-    if (_stopOrder.get(this)) throw new Error("SIGSTOP");
+    if (_stopOrder.get(this)) throw new Error("SIGSTOP_DONE");
   }
+
   async catchAllError(err) {
     await Promise.all([this.load3.stop(), this.load1.stop(), this.load2.stop()])
       .then(() => {
         _stopOrder.set(this, false);
-        err.message === "SIGSTOP"
-          ? this.deferred.reject(
-              col.bold.bgRed(ui.fullText("process stopped successfully."))
-            )
-          : this.deferred.reject(err);
+        let error;
+        if (err.message === "SIGSTOP") {
+          error = {
+            err: col.bold.bgRed(ui.fullText("process stopped successfully.")),
+            done: false
+          };
+        } else if (err.message === "SIGSTOP_DONE") {
+          error = {
+            err: col.bold.bgRed(ui.fullText("process stopped successfully.")),
+            done: true
+          };
+        } else {
+          error = { err, done: false };
+        }
+
+        this.deferred.reject(error);
       })
-      .catch(reason => this.deferred.reject(err + "||||" + reason));
+      .catch(reason => this.deferred.reject(`${err}||||${reason}`));
   }
+
   master({ Prepare, Save, Delete, Initial }) {
     this.deferred = Q.defer();
     if (!Initial) Initial = { client: this.client, config: this.config };
@@ -91,7 +111,9 @@ module.exports = class UILog {
       .then(Delete)
       .tap(() => this.deletedDataLog())
       .then(this.deferred.resolve)
-      .catch(async err => await this.catchAllError(err))
+      .catch(async err => {
+        await this.catchAllError(err);
+      })
       .finally(() => {
         if (!this.ev.closed) this.ev.unsubscribe();
       });

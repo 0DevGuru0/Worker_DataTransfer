@@ -8,7 +8,7 @@ const { ui, errorModel } = require("../../helpers");
 const { usersCont, visitorsCont } = require("../handler");
 const logReport = require("./log");
 
-const time = moment().format("dddd, MMMM Do YYYY, h:mm a");
+const time = moment().format("dddd, MMMM Do YYYY, h:mm:ss a");
 
 function FetchData(client) {
   this.client = client;

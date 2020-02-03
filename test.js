@@ -1,5 +1,5 @@
-const { Line } = require("clui"),
-  clc = require("cli-color");
+const { Line } = require("clui");
+const clc = require("cli-color");
 // { ui } = require("../../helpers");
 ///////////////////////////////////////////////////
 /* Test Purpose*/

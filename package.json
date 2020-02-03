@@ -7,10 +7,7 @@
     "test": "npm run test",
     "start": "nodemon index"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+ssh://git@github.com/afsan007/worker_DataTransfer.git"
-  },
+  "repository": "git+ssh://git@github.com/afsan007/worker_DataTransfer.git",
   "engines": {
     "node": ">=10.0.0"
   },
@@ -29,6 +26,7 @@
   "dependencies": {
     "ansi-escapes": "^4.2.1",
     "async-redis": "^1.1.7",
+    "babel-eslint": "^10.0.3",
     "chalk": "^2.4.2",
     "cli-progress": "^3.4.0",
     "cli-spinner": "^0.2.10",
@@ -59,6 +57,7 @@
     "eslint-plugin-import": "^2.20.0",
     "eslint-plugin-node": "^11.0.0",
     "eslint-plugin-prettier": "^3.1.2",
+    "eslint-plugin-promise": "^4.2.1",
     "prettier": "^1.19.1"
   }
 }

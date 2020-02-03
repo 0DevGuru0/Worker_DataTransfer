@@ -5,14 +5,14 @@ const { ui } = require("../../helpers");
 
 const container = {
   onlineUsersList: ({ client, setState = [] }) => {
-    var deferred = Q.defer();
-    let config = {
+    const deferred = Q.defer();
+    const config = {
       redisBucket: "online:users:TList",
       logBucket: "onlineUsersList",
       collectionName: "onlineCount"
     };
     usersStore({ config, client })
-      .then(_ => {
+      .then(() => {
         setState.push("onlineUsersList");
         deferred.resolve({ client, setState });
       })
@@ -20,14 +20,14 @@ const container = {
     return deferred.promise;
   },
   totalUsersVerified: ({ client, setState = [] }) => {
-    var deferred = Q.defer();
-    let config = {
+    const deferred = Q.defer();
+    const config = {
       redisBucket: "total:Verified:UserList",
       logBucket: "totalUsersVerified",
       collectionName: "totalVerifiedUsers"
     };
     usersStore({ config, client })
-      .then(_ => {
+      .then(() => {
         setState.push("totalUsersVerified");
         deferred.resolve({ client, setState });
       })
@@ -35,14 +35,14 @@ const container = {
     return deferred.promise;
   },
   totalUsersList: ({ client, setState = [] }) => {
-    var deferred = Q.defer();
-    let config = {
+    const deferred = Q.defer();
+    const config = {
       redisBucket: "total:users:TList",
       logBucket: "totalUsersList",
       collectionName: "totalUsers"
     };
     usersStore({ config, client })
-      .then(_ => {
+      .then(() => {
         setState.push("totalUsersList");
         deferred.resolve({ client, setState });
       })
@@ -54,10 +54,10 @@ const container = {
 module.exports = {
   usersCont: container,
   usersWorker: client => {
-    let deferred = Q.defer();
+    const deferred = Q.defer();
     console.log(ui.horizontalLine);
-    let main = container.onlineUsersList(client);
-    let main1 = main.then(container.totalUsersList);
+    const main = container.onlineUsersList(client);
+    const main1 = main.then(container.totalUsersList);
     main1
       .then(container.totalUsersVerified)
       .then(() => {

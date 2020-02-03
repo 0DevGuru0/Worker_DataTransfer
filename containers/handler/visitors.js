@@ -1,17 +1,15 @@
-const Q = require("q"),
-  chalk = require("chalk");
+const Q = require("q");
 
 const {
   pageViewsStore,
   onlineVisitorsStore,
   visitorsStateStore
 } = require("./provider");
-const { ui } = require("../../helpers");
 
 const container = {
-  onlineVisitorsList: client => {
-    var deferred = Q.defer();
-    let config = {
+  onlineVisitorsList: ({ client, setState = [] }) => {
+    const deferred = Q.defer();
+    const config = {
       redisBucket: "online:visitors:TList",
       logBucket: "onlineVisitorList",
       collectionName: "onlineList",
@@ -19,51 +17,47 @@ const container = {
       countBox2: "totalVisit"
     };
     onlineVisitorsStore({ client, config })
-      .then(_ => deferred.resolve(client))
-      .catch(deferred.reject);
+      .then(() => {
+        setState.push("onlineVisitorsList");
+        deferred.resolve({ client, setState });
+      })
+      .catch(({ err, done }) => {
+        if (done) setState.push("onlineVisitorsList");
+        deferred.reject({ err, setState, done });
+      });
     return deferred.promise;
   },
-  pageViews: client => {
-    var deferred = Q.defer();
-    let config = {
+  pageViews: ({ client, setState = [] }) => {
+    const deferred = Q.defer();
+    const config = {
       collectionName: "pageViews",
       logBucket: "pageViews"
     };
     pageViewsStore({ client, config })
-      .then(_ => deferred.resolve(client))
-      .catch(deferred.reject);
+      .then(() => {
+        setState.push("pageViews");
+        deferred.resolve({ client, setState });
+      })
+      .catch(({ err, done }) => {
+        if (done) setState.push("pageViews");
+        deferred.reject({ err, setState, done });
+      });
     return deferred.promise;
   },
-  visitorsState: client => {
-    var deferred = Q.defer();
-    let config = { logBucket: "visitorsState" };
+  visitorsState: ({ client, setState = [] }) => {
+    const deferred = Q.defer();
+    const config = { logBucket: "visitorsState" };
     visitorsStateStore({ client, config })
-      .then(_ => deferred.resolve(client))
-      .catch(deferred.reject);
-
-    return deferred.promise;
-  }
-};
-
-module.exports = {
-  visitorsCont: container,
-  visitorsWorker: client => {
-    console.log(ui.horizontalLine);
-    var deferred = Q.defer();
-    container
-      .onlineVisitorsList(client)
-      .then(container.visitorsState)
-      .then(container.pageViews)
-      .then(client => {
-        console.log(
-          chalk.bold.bgGreen.black(
-            "Congratulation!!! Visitors Data Transferring to MongoDB is successfully done.."
-          )
-        );
-        console.log(ui.horizontalLine);
-        deferred.resolve(client);
+      .then(() => {
+        setState.push("visitorsState");
+        deferred.resolve({ client, setState });
       })
-      .catch(deferred.reject);
+      .catch(({ err, done }) => {
+        if (done) setState.push("visitorsState");
+        deferred.reject({ err, setState, done });
+      });
     return deferred.promise;
   }
 };
+
+module.exports = { visitorsCont: container };

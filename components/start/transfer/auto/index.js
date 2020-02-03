@@ -32,7 +32,7 @@ module.exports = () => {
           console.log(ui.horizontalLine);
           if (this.intErr) console.log(this.intErr);
           if (this.mainInterval) await clearInterval(this.mainInterval);
-          if (this.mongoose && this.mongoose.connection.readyState == 1)
+          if (this.mongoose && this.mongoose.connection.readyState === 1)
             await disconnectFromDBs({
               mongoose: this.mongoose,
               redis: this.redis,

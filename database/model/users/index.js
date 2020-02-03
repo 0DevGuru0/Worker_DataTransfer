@@ -1,7 +1,11 @@
-module.exports = {
-    Users:require('./main'),
-    totalUsersCount:require('./totalUsersCount'),
-    totalVerifiedUsersCount:require('./totalVerifiedUsersCount'),
-    onlineUsersCount: require('./onlineCount')
+const Users = require("./main");
+const TotalUsersCount = require("./totalUsersCount");
+const TotalVerifiedUsersCount = require("./totalVerifiedUsersCount");
+const OnlineUsersCount = require("./onlineCount");
 
-}
+module.exports = {
+  Users,
+  TotalUsersCount,
+  TotalVerifiedUsersCount,
+  OnlineUsersCount
+};

@@ -1,10 +1,10 @@
-const moment = require("moment"),
-  Q = require("q"),
-  _ = require("Lodash");
+const moment = require("moment");
+const _ = require("lodash");
+const Q = require("q");
 
 const {
   Visitors,
-  onlineVisitorsList
+  OnlineVisitorsList
 } = require("../../../database/model/visitors");
 const { errorModel } = require("../../../helpers");
 const UILog = require("./handler/UI_handler");
@@ -17,7 +17,7 @@ const fetchDataFromRedis = ({ client, config }) => {
       deferred.reject(errorModel(config.logBucket, "fetchDataFromRedis", err))
     )
     .then(primitiveData => {
-      //TODO: TEST
+      // TODO: TEST
       deferred.resolve({
         primitiveData: {
           "2019/10/5": '{"5.122.110.204":6}',
@@ -68,7 +68,7 @@ const prepareDataToStore = ({ primitiveData, config }) => {
     slimObj.Detail = Detail;
     return slimObj;
   };
-  let TempObj = (contain, reply, el, midContain) => {
+  let TempObj = (contain, reply, el) => {
     let midObj = {};
     let slimObj = TempObj_small(contain, reply, el);
     midObj.Year = +contain[0];
@@ -80,12 +80,12 @@ const prepareDataToStore = ({ primitiveData, config }) => {
     midContain.push(midObj);
   };
   let delKeys = [];
-  _.forIn(primitiveData, (value, key) => {
+  _.forIn(primitiveData, (val, key) => {
     if (moment(key, "YYYY/MM/DD").isBefore(moment(), "month")) {
       let contain = key.split("/");
       delKeys.push(key);
       if (midContain.length === 0) {
-        TempObj(contain, primitiveData, key, midContain);
+        TempObj(contain, primitiveData, key);
       } else {
         let target_obj = { Year: +contain[0], Month: +contain[1] };
         if (_.some(midContain, target_obj)) {
@@ -95,7 +95,7 @@ const prepareDataToStore = ({ primitiveData, config }) => {
           elem[config.countBox2] += smallObj.TotalVisit;
           elem[config.collectionName].push(smallObj);
         } else {
-          TempObj(contain, primitiveData, key, midContain);
+          TempObj(contain, primitiveData, key);
         }
       }
     }
@@ -105,7 +105,6 @@ const prepareDataToStore = ({ primitiveData, config }) => {
 const storeModels = async ({ midContain, config, delKeys, client }) => {
   let deferred = Q.defer();
   let arrLength = midContain.length;
-  let modelContainer = [];
   let specArr = [];
   if (arrLength < 1)
     deferred.reject(
@@ -115,13 +114,21 @@ const storeModels = async ({ midContain, config, delKeys, client }) => {
         "Nothing have found from redisDB to store in mongoDB"
       )
     );
-  for (let i = 0; i < arrLength; i++) {
-    let smallContain = midContain[i];
-    await Visitors.findOne({
-      Year: smallContain.Year,
-      Month: smallContain.Month
-    })
-      .then(visitor => {
+  const parentContainer = [];
+  const modelFunc = i =>
+    new Promise((res, rej) => {
+      let smallContain = midContain[i];
+      Visitors.findOne({
+        Year: smallContain.Year,
+        Month: smallContain.Month
+      })
+        .then(visitor => res({ visitor, smallContain }))
+        .catch(err => rej(err));
+    });
+  for (let i = 0; i < arrLength; i++) parentContainer.push(modelFunc(i));
+  await Promise.all(parentContainer)
+    .then(visitors =>
+      _.forEach(visitors, ({ visitor, smallContain }) => {
         let visitorModel = visitor
           ? visitor
           : new Visitors({
@@ -134,6 +141,7 @@ const storeModels = async ({ midContain, config, delKeys, client }) => {
         let specificCollection = smallContain[config.collectionName];
         specArr.push(...specificCollection);
         let smallArrLength = specificCollection.length;
+
         if (smallArrLength > 0) {
           for (let i = 0; i < smallArrLength; i++) {
             let {
@@ -143,7 +151,7 @@ const storeModels = async ({ midContain, config, delKeys, client }) => {
               TotalVisit,
               TotalVisitors
             } = specificCollection[i];
-            const model = new onlineVisitorsList({
+            const model = new OnlineVisitorsList({
               Day,
               Total,
               Detail,
@@ -155,14 +163,16 @@ const storeModels = async ({ midContain, config, delKeys, client }) => {
           }
         }
         visitorModel[config.collectionName].push(...onlineCountModel);
-        modelContainer.push(visitorModel, ...onlineCountModel);
+        let modelContainer = [visitorModel, ...onlineCountModel];
+
+        if (modelContainer.length === 0)
+          throw new Error("Nothing has been exist to store to Mongodb...");
+
+        Promise.all(modelContainer.map(el => el.save()))
+          .then(() => deferred.resolve({ config, delKeys, client }))
+          .catch(err => new Error(err));
       })
-      .catch(err =>
-        deferred.reject(errorModel(config.logBucket, "storeModels", err))
-      );
-  }
-  Promise.all(modelContainer.map(el => el.save()))
-    .then(_ => deferred.resolve({ config, delKeys, client }))
+    )
     .catch(err =>
       deferred.reject(errorModel(config.logBucket, "storeModels", err))
     );
@@ -177,8 +187,8 @@ const storeDataToMongoDB = Q.fbind(({ primitiveData, config, client }) =>
 );
 const deleteDataFromRedisDB = ({ client, config, delKeys }) => {
   let deferred = Q.defer();
-  console.log("DELETE::: onlineVisitors-- ", ...delKeys); //TODO: TEST <delete>
-  deferred.resolve(); //TODO: TEST <delete>
+  console.log("DELETE::: onlineVisitors-- ", ...delKeys); // TODO: TEST <delete>
+  deferred.resolve(); // TODO: TEST <delete>
   // client.hdel(config.redisBucket, ...delKeys)
   //     .then(reply => {
   //         if(reply===0) throw new Error('Couldn\'t Delete Data From Redis ')
