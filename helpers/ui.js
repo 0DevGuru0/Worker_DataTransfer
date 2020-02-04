@@ -1,6 +1,7 @@
 const cliWidth = require("cli-width");
 const ttys = require("ttys");
 const col = require("chalk");
+
 const cli_Width = cliWidth({
   defaultWidth: 80,
   output: ttys.output
@@ -20,7 +21,7 @@ const centralize = (str, width = cli_Width) => {
 
 const fullText = text => {
   let decText = centralize(text);
-  decText = "[" + decText;
+  decText = `[${decText}`;
   let rightPadding = cli_Width - decText.length;
   let line = "";
   for (let i = 1; i < rightPadding; i++) {

@@ -1,9 +1,10 @@
 const col = require("chalk");
 const {
-    auto_all,
-    auto_bucket
-  } = require("../../components/start/transfer/auto"),
-  manualTransfer = require("../../components/start/transfer/manual");
+  auto_all,
+  auto_bucket
+} = require("../../components/start/transfer/auto");
+const manualTransfer = require("../../components/start/transfer/manual");
+
 let vary = true;
 let cb = () => {
   vary = true;
@@ -28,9 +29,6 @@ module.exports = async (parent, str) => {
       await auto_bucket()
         .stop()
         .then(cb);
-  } else {
-    str === "stop"
-      ? console.log("no Operation or Interval has been set Yet.")
-      : "";
-  }
+  } else if (str === "stop")
+    console.log("no Operation or Interval has been set Yet.");
 };

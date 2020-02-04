@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "npm run test",
-    "start": "nodemon index"
+    "start": "node index"
   },
   "repository": "git+ssh://git@github.com/afsan007/worker_DataTransfer.git",
   "engines": {
@@ -42,6 +42,7 @@
     "lodash": "^4.17.15",
     "moment": "^2.24.0",
     "mongoose": "^5.7.1",
+    "node-emoji": "^1.10.0",
     "node-key-sender": "^1.0.11",
     "q": "^1.5.1",
     "redis": "^2.8.0",

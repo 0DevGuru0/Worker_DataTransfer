@@ -1,6 +1,6 @@
-module.exports = {
-  RedisDB: require("./redisDB"),
-  MongoDB: require("./mongoDB"),
-  connectToDBs: require("./connectToDBs"),
-  disconnectFromDBs: require("./disconnectFromDBs")
-};
+const RedisDB = require("./redisDB");
+const MongoDB = require("./mongoDB");
+const connectToDBs = require("./connectToDBs");
+const disconnectFromDBs = require("./disconnectFromDBs");
+
+module.exports = { RedisDB, MongoDB, connectToDBs, disconnectFromDBs };

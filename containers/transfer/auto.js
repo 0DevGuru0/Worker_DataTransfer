@@ -68,6 +68,7 @@ const MainClass = class AutoTransfer {
             errorModel("[AutoTransfer]", "[transferStatics/get]", err)
           );
         }
+        return reply;
       },
       transferFailed: async (reason, time) => {
         let { err, setState } = reason;

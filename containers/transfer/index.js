@@ -1,4 +1,4 @@
-module.exports = {
-  AutoTransfer: require("./auto"),
-  ManualTransfer: require("./manual")
-};
+const AutoTransfer = require("./auto");
+const ManualTransfer = require("./manual");
+
+module.exports = { AutoTransfer, ManualTransfer };

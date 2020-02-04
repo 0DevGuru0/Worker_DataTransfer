@@ -2,8 +2,9 @@ const chalk = require("chalk");
 const Q = require("q");
 const Redis = require("redis");
 require("dotenv").config();
+
 module.exports = () => {
-  var deferred = Q.defer();
+  let deferred = Q.defer();
   const redis = Redis.createClient({
     host: process.env.REDIS_HOST,
     port: process.env.REDIS_PORT,

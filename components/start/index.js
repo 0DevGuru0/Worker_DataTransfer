@@ -1,9 +1,9 @@
 const clc = require("chalk");
 const _ = require("lodash");
-const ask = require("../../vendor/inquirer"),
-  { BaseUI } = require("../../public/util"),
-  autoTransfer = require("./transfer/auto"),
-  manualTransfer = require("./transfer/manual");
+const ask = require("../../vendor/inquirer");
+const { BaseUI } = require("../../public/util");
+const autoTransfer = require("./transfer/auto");
+const manualTransfer = require("./transfer/manual");
 
 class StartComponent extends BaseUI {
   constructor() {
@@ -49,6 +49,7 @@ class StartComponent extends BaseUI {
       when: ans => ans.transferMethod === "auto"
     };
   }
+
   start(str, parent) {
     ask.promptParent = parent;
     this.manualTransfer = manualTransfer(parent.rl);
@@ -75,27 +76,32 @@ class StartComponent extends BaseUI {
       `'${container.join(" ")}' is not a correct command. See 'start --help'.`
     );
   }
+
   autoBucket() {
     let question = _.concat(this.QA_intervalTime, this.QA_redisBuckets);
     let callback = ({ intervalTime, redisBuckets }) =>
       this.autoTransfer.start({ bucket: redisBuckets, intervalTime });
     return ask.prompt(question, callback);
   }
+
   autoAll() {
     let question = _.concat(this.QA_intervalTime);
     let callback = ({ intervalTime }) =>
       this.autoTransfer.start({ intervalTime, bucket: null });
     return ask.prompt(question, callback);
   }
+
   manual() {
     let question = _.concat(this.QA_redisBuckets);
     let callback = ({ redisBuckets }) =>
       this.manualTransfer.start(redisBuckets);
     return ask.prompt(question, callback);
   }
+
   master() {
     let question = _.concat(this.QA_transferMethod, this.QA_transferBucket);
     let callback = answers => {
+      // eslint-disable-next-line no-nested-ternary
       return answers.transferMethod === "manual"
         ? this.manual()
         : answers.transferBucket === "all"
@@ -104,22 +110,22 @@ class StartComponent extends BaseUI {
     };
     return ask.prompt(question, callback);
   }
+
   startHelp() {
     this.horizontalLine();
     this.centered(clc.cyan.bold("Start"));
     this.horizontalLine();
     process.stdout.write(
-      clc.bold.green("Usage") +
-        ":\n" +
-        "\tstart [transfer|backup] [auto|manual] --[all|bucket]\n" +
-        clc.bold.green("Description") +
-        ":\n" +
-        "\t\f1/Transfer :\n" +
-        "\t\ttransmit Redis last months Data to MongoDB" +
-        "\n\t\t& Delete transmitted data from Redis\n" +
-        "\t\f2/BackUp :\n" +
-        "\t\tStore Redis data to Mongodb" +
-        "\n\t\t& don't delete data from Redis\n"
+      `${clc.bold.green("Usage")}:\n` +
+        `\tstart [transfer|backup] [auto|manual] --[all|bucket]\n${clc.bold.green(
+          "Description"
+        )}:\n` +
+        `\t\f1/Transfer :\n` +
+        `\t\ttransmit Redis last months Data to MongoDB` +
+        `\n\t\t& Delete transmitted data from Redis\n` +
+        `\t\f2/BackUp :\n` +
+        `\t\tStore Redis data to Mongodb` +
+        `\n\t\t& don't delete data from Redis\n`
     );
     this.horizontalLine();
   }

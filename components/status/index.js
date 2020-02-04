@@ -1,10 +1,11 @@
-const os = require("os"),
-  v8 = require("v8"),
-  { Gauge, Progress } = require("clui"),
-  clc = require("chalk"),
-  Q = require("q"),
-  _ = require("lodash"),
-  { MongoDB, RedisDB } = require("../../database");
+const os = require("os");
+const v8 = require("v8");
+const clc = require("chalk");
+const Q = require("q");
+const _ = require("lodash");
+const { Gauge, Progress } = require("clui");
+
+const { MongoDB, RedisDB } = require("../../database");
 const ask = require("../../vendor/inquirer");
 const { BaseUI } = require("../../public/util");
 
@@ -18,21 +19,23 @@ class StatusHandler extends BaseUI {
       "Load Average": os.loadavg().join(" "),
       "CPU Count": os.cpus().length,
       "Used Memory": this.memory(),
-      "Current Malloced Memory":
-        Math.ceil(v8.getHeapStatistics().malloced_memory / 1000000) + " MB",
-      "Peak Malloced Memory":
-        Math.ceil(v8.getHeapStatistics().peak_malloced_memory / 1000000) +
-        " MB",
+      "Current Malloced Memory": `${Math.ceil(
+        v8.getHeapStatistics().malloced_memory / 1000000
+      )} MB`,
+      "Peak Malloced Memory": `${Math.ceil(
+        v8.getHeapStatistics().peak_malloced_memory / 1000000
+      )} MB`,
       "Used Malloced Memory": this.mallocedMemory(),
       "Used Heap Used (%)": this.heapSize(),
       "Available Heap Allocated (%)": this.availableHeap(),
-      Uptime: Math.round(os.uptime() / 60) + " min"
+      Uptime: `${Math.round(os.uptime() / 60)} min`
     };
   }
+
   mallocedMemory() {
     let { malloced_memory, peak_malloced_memory } = v8.getHeapStatistics();
     let used = peak_malloced_memory - malloced_memory;
-    let human = Math.ceil(used / 1000000) + " MB";
+    let human = `${Math.ceil(used / 1000000)} MB`;
     return Gauge(
       malloced_memory,
       peak_malloced_memory,
@@ -41,15 +44,17 @@ class StatusHandler extends BaseUI {
       human
     );
   }
+
   availableHeap() {
     let { heap_size_limit, total_heap_size } = v8.getHeapStatistics();
     let percent = Math.round((total_heap_size / heap_size_limit) * 100);
     return new Progress(20).update(percent, 100);
   }
+
   heapSize() {
     let { used_heap_size, total_heap_size } = v8.getHeapStatistics();
     let used = total_heap_size - used_heap_size;
-    let human = Math.ceil(used / 1000000) + " MB";
+    let human = `${Math.ceil(used / 1000000)} MB`;
     return Gauge(
       used_heap_size,
       total_heap_size,
@@ -58,24 +63,27 @@ class StatusHandler extends BaseUI {
       human
     );
   }
+
   memory() {
-    let total = os.totalmem(),
-      free = os.freemem(),
-      used = total - free,
-      human = Math.ceil(used / 1000000) + " MB";
+    let total = os.totalmem();
+    let free = os.freemem();
+    let used = total - free;
+    let human = `${Math.ceil(used / 1000000)} MB`;
     return Gauge(used, total, 20, total * 0.8, human);
   }
+
   statsUi(list, name) {
     let lengths = [];
     let lines = [];
     _.forIn(list, (value, key) => {
-      let line = "âï¸  " + clc.bold.yellow(key) + " ";
+      let line = `âï¸  ${clc.bold.yellow(key)} `;
       let padding = (this.width / 4) * 3 - line.length;
       for (let space = 0; space <= padding; space++) {
         line += "-";
       }
-      list.hasOwnProperty(key)
-        ? (line += " " + list[key])
+      // eslint-disable-next-line no-unused-expressions
+      Object.prototype.hasOwnProperty.call(list, key)
+        ? (line += ` ${list[key]}`)
         : (line += clc.red("Undefined Yet"));
       lengths.push(padding.length);
       lines.push(line);
@@ -87,10 +95,12 @@ class StatusHandler extends BaseUI {
     this.horizontalLine(this.width);
     this.verticalSpace();
   }
+
   systemStatus(inter) {
     this.statsUi(this.list, "Status");
     inter.prompt();
   }
+
   transferHandler(bucket) {
     RedisDB().then(async redis => {
       const client = asyncRedis.decorate(redis);
@@ -103,6 +113,7 @@ class StatusHandler extends BaseUI {
       await client.quit();
     });
   }
+
   transferStatus(inter) {
     let question = [
       {
@@ -124,6 +135,7 @@ class StatusHandler extends BaseUI {
       this.transferHandler(methodSpec);
     });
   }
+
   async databaseData() {
     var deferred = Q.defer();
     RedisDB().then(async redis => {
@@ -156,6 +168,7 @@ class StatusHandler extends BaseUI {
     });
     return deferred.promise;
   }
+
   databaseStatus(inter) {
     return this.databaseData().then(({ redisInfo, mongoDBInfo }) => {
       this.statsUi(redisInfo, "REDIS");
@@ -163,11 +176,13 @@ class StatusHandler extends BaseUI {
       inter.prompt();
     });
   }
+
   allStatus(inter) {
     this.systemStatus(inter);
     this.transferStatus(inter);
     this.databaseStatus(inter);
   }
+
   master(inter) {
     let question = [
       {

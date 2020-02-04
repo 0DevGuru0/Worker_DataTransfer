@@ -1,11 +1,10 @@
-const readline = require("readline"),
-  events = require("events"),
-  _ = require("lodash"),
-  { fromEvent } = require("rxjs"),
-  { filter, switchMap, take } = require("rxjs/operators");
-(clc = require("chalk")), (MuteStream = require("mute-stream"));
+// eslint-disable-next-line max-classes-per-file
+const readline = require("readline");
+const events = require("events");
+const clc = require("chalk");
+const MuteStream = require("mute-stream");
 
-const { StartComponent, StatusHandler } = require("../components");
+const { StartComponent, StatusHandler,LogComponent } = require("../components");
 const { BaseUI, ManPage, stopPro } = require("./util");
 
 /*
@@ -17,23 +16,50 @@ class CliInterface extends BaseUI {
     super(props);
     this.exitAllow = 0;
     this.e = new _EventsEmitter();
-    this.startCL = new StartComponent();
+    this.startCl = new StartComponent();
     this.statusCl = new StatusHandler();
+    this.logCl = new LogComponent();
     this.manCL = new ManPage();
+    this.possibleCommands = [
+      "man",
+      "help",
+      "status",
+      "start",
+      "log",
+      "test",
+      "health",
+      "setting",
+      "exit",
+      "stop"
+    ];
   }
+
   eventListeners() {
-    this.e.on("start", str => this.startCL.start(str, this));
-    this.e.on("status", _ => this.statusCl.master(this.rl));
-    this.e.on("log", _ => this.log());
-    this.e.on("test", _ => this.test());
-    this.e.on("health", _ => this.healthCheck());
-    this.e.on("setting", _ => this.setting());
-    this.e.on("exit", _ => this.exit());
+    this.e.on("start", str => this.startCl.start(str, this));
+    this.e.on("status", () => this.statusCl.master(this.rl));
+    this.e.on("log", str => this.logCl.start(str,this));
+    this.e.on("test", () => this.test());
+    this.e.on("health", () => this.healthCheck());
+    this.e.on("setting", () => this.setting());
+    this.e.on("exit", () => this.exit());
     this.e.on("stop", str => stopPro(this, str));
-    this.e.on("man", _ => this.manCL.run(this.possibleCommands));
-    this.e.on("help", _ => this.manCL.run(this.possibleCommands));
-    this.e.on("clear", _ => console.clear());
+    this.e.on("man", () => this.manCL.run(this.possibleCommands));
+    this.e.on("help", () => this.manCL.run(this.possibleCommands));
+    this.e.on("clear", () => console.clear());
   }
+
+  setting() {
+    console.log("not implemented yet");
+  }
+
+  healthCheck() {
+    console.log("not implemented yet");
+  }
+
+  test() {
+    console.log("not implemented yet");
+  }
+
   init() {
     let commands = this.e.eventNames();
     let ms = new MuteStream();
@@ -56,7 +82,7 @@ class CliInterface extends BaseUI {
       } else {
         this.onForceClose();
       }
-      this.exitAllow++;
+      this.exitAllow += 1;
     });
 
     this.rl.prompt();
@@ -64,13 +90,14 @@ class CliInterface extends BaseUI {
       if (this.exitAllow === 1) this.exitAllow = 0;
       let misType = [];
       str =
-        typeof str == "string" && str.trim().length > 0
+        typeof str === "string" && str.trim().length > 0
           ? str.trim().toLowerCase()
           : false;
-      let result = commands.some(el => {
-        let regex = new RegExp("\\b" + el + "\\b", "g");
+      commands.some(el => {
+        let regex = new RegExp(`\\b${el}\\b`, "g");
         if (!str) return false;
         if (str.match(regex)) {
+          // eslint-disable-next-line no-unused-expressions
           str.split(" ")[0] !== el
             ? misType.push("misType", el, str)
             : this.e.emit(el, str);
@@ -80,6 +107,7 @@ class CliInterface extends BaseUI {
           misType.push("misType", el, str);
           return true;
         }
+        return false;
       });
       if (misType[0] === "misType") {
         this.rl.question(
@@ -94,10 +122,12 @@ class CliInterface extends BaseUI {
       this.rl.prompt();
     });
   }
+
   onForceClose() {
     this.exit();
     process.kill(process.pid, "SIGINT");
   }
+
   exit() {
     this.exitAllow = 0;
     console.log(clc.bgCyan.bold.white("\r\n  Have Fun...  "), "❤️ ❤️ ❤️");

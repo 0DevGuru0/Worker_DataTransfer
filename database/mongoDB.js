@@ -4,7 +4,7 @@ require("dotenv").config();
 const mongoose = require("mongoose");
 
 module.exports = redis => {
-  var deferred = Q.defer();
+  let deferred = Q.defer();
   mongoose
     .connect(process.env.DB_ADDRESS, {
       keepAlive: true,

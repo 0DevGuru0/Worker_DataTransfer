@@ -1,5 +1,6 @@
-const { ui } = require("../../helpers");
 const col = require("chalk");
+const { ui } = require("../../helpers");
+
 module.exports = {
   uiBeforeComplete: time => {
     console.log(
@@ -20,18 +21,5 @@ module.exports = {
         ui.fullText("Press ctrl+x to stop the process of transferring data")
       )
     );
-  },
-  statisticLog: ({ time, staticsBucket }) => {
-    ui.horizontalLine +
-      "\n" +
-      ui.centralize(col.bold("Data Transfer statistic")) +
-      "\n" +
-      col.bold.bgGreen("Transferred Buckets:") +
-      "\n\t" +
-      staticsBucket.replace(/:/gi, "\n\t") +
-      "\n" +
-      col.bold.bgGreen("Transferred Time:") +
-      "\n\t" +
-      time;
   }
 };

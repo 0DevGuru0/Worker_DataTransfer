@@ -1,5 +1,7 @@
 const clc = require("chalk");
+const _ = require("lodash");
 const BaseUI = require("./base");
+const emoji = require("node-emoji");
 
 module.exports = class Man extends BaseUI {
   constructor() {
@@ -17,25 +19,26 @@ module.exports = class Man extends BaseUI {
       stop: "Stop Interval from automation transfer"
     };
   }
+
   run(possibleCommands) {
     let lengths = [];
     let lines = [];
     _.forEach(possibleCommands, elem => {
-      let line = "âï¸  " + clc.bold.yellow(elem) + " ";
+      let line = `${clc.bold.yellow(elem)} `;
       let padding = 40 - line.length;
       for (let space = 0; space <= padding; space++) {
         line += "-";
       }
-      this.commands.hasOwnProperty(elem)
-        ? (line += " " + this.commands[elem])
+      // eslint-disable-next-line no-unused-expressions
+      Object.prototype.hasOwnProperty.call(this.commands, elem)
+        ? (line += ` ${this.commands[elem]}`)
         : (line += clc.red("Undefined Yet"));
       lengths.push(padding.length);
       lines.push(line);
     });
-    //TODO: not measure properly
-    let biggestLength = lengths.sort((a, b) => b - a)[0];
+    // TODO: not measure properly
     this.horizontalLine(74);
-    this.centered("ð§­  CLI Manual ð§­", 70);
+    this.centered(`__CLI Manual__`, 70);
     this.horizontalLine(74);
     _.forEach(lines, el => console.log(el));
     this.horizontalLine(74);

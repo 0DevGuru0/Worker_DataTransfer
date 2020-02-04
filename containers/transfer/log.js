@@ -1,9 +1,9 @@
 const { Line } = require("clui");
 const moment = require("moment");
-const clc = require("cli-color");
+const clc = require("chalk");
 const { ui } = require("../../helpers");
-///////////////////////////////////////////////////
-/* Test Purpose*/
+// /////////////////////////////////////////////////
+/* Test Purpose */
 // const buckets = {
 //   "Saturday, January 25th 2020, 1:19 pm": [
 //     "onlineUsersList",
@@ -32,7 +32,7 @@ const { ui } = require("../../helpers");
 //   "Saturday, January 25th 2020, 3:19 pm"
 // ];
 
-///////////////////////////////////////////////////
+// /////////////////////////////////////////////////
 class LogReport {
   constructor(props) {
     this.timeColSize = 38;
@@ -43,6 +43,7 @@ class LogReport {
       ? props.timeContainer
       : [moment().format("dddd, MMMM Do YYYY, h:mm a")];
   }
+
   headers() {
     return new Line()
       .column(clc.bold("Time"), this.timeColSize, [clc.cyan])
@@ -50,6 +51,7 @@ class LogReport {
       .fill()
       .contents();
   }
+
   splitLine() {
     let j = [];
     for (let i = 0; i < this.timeColSize; i++) {
@@ -60,6 +62,7 @@ class LogReport {
       .fill()
       .contents();
   }
+
   firstLine(f) {
     return new Line()
       .column(this.timeContainer[f], this.timeColSize)
@@ -75,6 +78,7 @@ class LogReport {
       .fill()
       .contents();
   }
+
   remainLines(j) {
     const container = [];
     for (let i = 1; i < this.buckets[this.timeContainer[j]].length; i++) {
@@ -89,10 +93,11 @@ class LogReport {
     }
     return container.join("\n");
   }
+
   buildLog() {
     let content = ui.horizontalLine;
     content += "\n";
-    content += ui.centralize(col.bold("Data Transfer Statistic"));
+    content += ui.centralize(clc.bold("Data Transfer Statistic"));
     content += "\n";
     content += this.headers();
     for (let j = 0; j < this.timeContainer.length; j++) {

@@ -1,4 +1,5 @@
 const { Schema, model } = require("mongoose");
+
 const visitorsState = new Schema({
   Year: { type: String },
   CountryState: { type: Schema.Types.Mixed },
