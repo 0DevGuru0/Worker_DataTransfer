@@ -1,15 +1,16 @@
-"use strict";
+"use-strict";
+
 /*
  * `list` type prompt
  */
-const _ = require("lodash"),
-  col = require("chalk"),
-  cliCursor = require("cli-cursor"),
-  fig = require("figures"),
-  { map, takeUntil, tap } = require("rxjs/operators"),
-  Base = require("./base"),
-  observe = require("../utils/events"),
-  Paginator = require("../utils/paginator");
+const _ = require("lodash");
+const col = require("chalk");
+const cliCursor = require("cli-cursor");
+const fig = require("figures");
+const { map, takeUntil, tap } = require("rxjs/operators");
+const Base = require("./base");
+const observe = require("../utils/events");
+const Paginator = require("../utils/paginator");
 
 class CheckBoxPrompt extends Base {
   constructor(que, rl, ans) {
@@ -26,6 +27,7 @@ class CheckBoxPrompt extends Base {
     this.opt.default = null;
     this.paginator = new Paginator(this.screen);
   }
+
   _run(cb) {
     this.done = cb;
     let events = observe(this.rl);
@@ -77,30 +79,31 @@ class CheckBoxPrompt extends Base {
     let message = this.getQuestion();
     let bottomContent = "";
     if (!this.spaceKeyPressed) {
-      message +=
-        "\n[Press " +
-        col.cyan.bold("<space>") +
-        " to select, " +
-        col.cyan.bold("<a>") +
-        " to toggle all, " +
-        col.cyan.bold("<i>") +
-        " to invert selection]";
+      message += `\n[Press ${col.cyan.bold(
+        "<space>"
+      )} to select, ${col.cyan.bold("<a>")} to toggle all, ${col.cyan.bold(
+        "<i>"
+      )} to invert selection]`;
     }
     if (this.status === "answered") {
       message += col.cyan(this.selection.join(", "));
     } else {
+      // eslint-disable-next-line no-use-before-define
       let choicesStr = renderChoices(this.opt.choices, this.pointer);
       let indexPosition = this.opt.choices.indexOf(
         this.opt.choices.getChoice(this.pointer)
       );
-      message +=
-        "\n" +
-        this.paginator.paginate(choicesStr, indexPosition, this.opt.pageSize);
+      message += `\n${this.paginator.paginate(
+        choicesStr,
+        indexPosition,
+        this.opt.pageSize
+      )}`;
     }
     if (error) bottomContent = col.red(">> ") + error;
 
     this.screen.render(message, bottomContent);
   }
+
   onEnd(state) {
     this.status = "answered";
     this.spaceKeyPressed = true;
@@ -108,9 +111,11 @@ class CheckBoxPrompt extends Base {
     this.screen.done();
     this.done(state.value);
   }
+
   onError(state) {
     this.render(state.isValid);
   }
+
   getCurrentValue() {
     let choices = this.opt.choices.filter(
       choice => Boolean(choice.checked) && !choice.disabled
@@ -118,16 +123,19 @@ class CheckBoxPrompt extends Base {
     this.selection = _.map(choices, "short"); // display after selection
     return _.map(choices, "value");
   }
+
   onUpKey() {
     let len = this.opt.choices.realLength;
     this.pointer = this.pointer > 0 ? this.pointer - 1 : len - 1;
     this.render();
   }
+
   onDownKey() {
     let len = this.opt.choices.realLength;
     this.pointer = this.pointer < len - 1 ? this.pointer + 1 : 0;
     this.render();
   }
+
   onNumberKey(input) {
     if (input <= this.opt.choices.realLength) {
       this.pointer = input - 1;
@@ -135,11 +143,13 @@ class CheckBoxPrompt extends Base {
     }
     this.render();
   }
+
   onSpaceKey() {
     this.spaceKeyPressed = true;
     this.toggleChoice(this.pointer);
     this.render();
   }
+
   onAllKey() {
     let shouldBeChecked = Boolean(
       this.opt.choices.find(
@@ -151,12 +161,14 @@ class CheckBoxPrompt extends Base {
     });
     this.render();
   }
+
   onInverseKey() {
     this.opt.choices.choices.forEach(choice => {
       if (choice.type !== "separator") choice.checked = !choice.checked;
     });
     this.render();
   }
+
   toggleChoice(index) {
     let item = this.opt.choices.getChoice(index);
     if (item !== undefined) item.checked = !item.checked;
@@ -173,23 +185,23 @@ function renderChoices(choices, pointer) {
   let separatorOffset = 0;
   choices.choices.forEach((choice, i) => {
     if (choice.type === "separator") {
-      separatorOffset++;
-      output += " " + choice + "\n";
+      separatorOffset += 1;
+      output += ` ${choice}\n`;
       return;
     }
     if (choice.disabled) {
-      separatorOffset++;
-      output += "- " + choice.name;
-      output +=
-        "( " +
-        (_.isString(choice.disabled) ? choice.disabled : "Disabled") +
-        " )";
+      separatorOffset += 1;
+      output += `- ${choice.name}`;
+      output += `( ${
+        _.isString(choice.disabled) ? choice.disabled : "Disabled"
+      } )`;
     } else {
+      // eslint-disable-next-line no-use-before-define
       let line = getCheckbox(choice.checked, choice);
       output +=
         i - separatorOffset === pointer
           ? col.cyan(fig.pointer + line)
-          : " " + line;
+          : ` ${line}`;
     }
     output += "\n";
   });
@@ -204,8 +216,8 @@ function renderChoices(choices, pointer) {
 
 function getCheckbox(checked, choice) {
   return checked
-    ? col.green(fig.radioOn) + " " + col.bgGreen.black(choice.name)
-    : fig.radioOff + " " + choice.name;
+    ? `${col.green(fig.radioOn)} ${col.bgGreen.black(choice.name)}`
+    : `${fig.radioOff} ${choice.name}`;
 }
 
 module.exports = CheckBoxPrompt;

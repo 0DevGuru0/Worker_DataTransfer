@@ -1,11 +1,12 @@
 const clc = require("chalk");
 const _ = require("lodash");
 const ask = require("../../vendor/inquirer");
-const { BaseUI } = require("../../public/util");
+const { Base } = require("../../public/util");
 const autoTransfer = require("./transfer/auto");
 const manualTransfer = require("./transfer/manual");
+const { ui } = require("../../helpers");
 
-class StartComponent extends BaseUI {
+class StartComponent extends Base {
   constructor() {
     super();
     this.QA_redisBuckets = {
@@ -112,9 +113,9 @@ class StartComponent extends BaseUI {
   }
 
   startHelp() {
-    this.horizontalLine();
-    this.centered(clc.cyan.bold("Start"));
-    this.horizontalLine();
+    console.log(ui.horizontalLine());
+    console.log(ui.centralize(clc.cyan.bold("Start")));
+    console.log(ui.horizontalLine());
     process.stdout.write(
       `${clc.bold.green("Usage")}:\n` +
         `\tstart [transfer|backup] [auto|manual] --[all|bucket]\n${clc.bold.green(
@@ -127,7 +128,7 @@ class StartComponent extends BaseUI {
         `\t\tStore Redis data to Mongodb` +
         `\n\t\t& don't delete data from Redis\n`
     );
-    this.horizontalLine();
+    console.log(ui.horizontalLine());
   }
 }
 

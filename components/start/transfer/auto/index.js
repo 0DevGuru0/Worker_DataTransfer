@@ -29,7 +29,7 @@ module.exports = () => {
         .finally(async () => {
           if (this.extErr) console.log(this.extErr);
           if (this.logs) console.log(this.logs);
-          console.log(ui.horizontalLine);
+          console.log(ui.horizontalLine());
           if (this.intErr) console.log(this.intErr);
           if (this.mainInterval) await clearInterval(this.mainInterval);
           if (this.mongoose && this.mongoose.connection.readyState === 1)

@@ -7,9 +7,9 @@ const { Gauge, Progress } = require("clui");
 
 const { MongoDB, RedisDB } = require("../../database");
 const ask = require("../../vendor/inquirer");
-const { BaseUI } = require("../../public/util");
+const { Base } = require("../../public/util");
 
-class StatusHandler extends BaseUI {
+class StatusHandler extends Base {
   constructor(props) {
     super(props);
     this.list = {
@@ -88,12 +88,13 @@ class StatusHandler extends BaseUI {
       lengths.push(padding.length);
       lines.push(line);
     });
-    this.horizontalLine(this.width);
-    this.centered(`ð§­  ${name} ð§­`, this.width);
-    this.horizontalLine(this.width);
-    _.forEach(lines, el => console.log(el));
-    this.horizontalLine(this.width);
-    this.verticalSpace();
+    console.log(ui.horizontalLine(74));
+    console.log(ui.centralize(`__CLI Manual__`, 70));
+    console.log(ui.horizontalLine(74));
+    _.forEach(lines, el => {
+      console.log(el);
+    });
+    console.log(ui.horizontalLine());
   }
 
   systemStatus(inter) {

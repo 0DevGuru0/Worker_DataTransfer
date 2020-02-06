@@ -4,14 +4,19 @@ const events = require("events");
 const clc = require("chalk");
 const MuteStream = require("mute-stream");
 
-const { StartComponent, StatusHandler,LogComponent } = require("../components");
-const { BaseUI, ManPage, stopPro } = require("./util");
+const {
+  StartComponent,
+  StatusHandler,
+  LogComponent,
+  healthCheck
+} = require("../components");
+const { Base, ManPage, stopPro } = require("./util");
 
 /*
   1/ All files inside vender/inquirer have access to all methods of this files.[by parent name in them files]
 */
 class _EventsEmitter extends events {}
-class CliInterface extends BaseUI {
+class CliInterface extends Base {
   constructor(props) {
     super(props);
     this.exitAllow = 0;
@@ -37,9 +42,9 @@ class CliInterface extends BaseUI {
   eventListeners() {
     this.e.on("start", str => this.startCl.start(str, this));
     this.e.on("status", () => this.statusCl.master(this.rl));
-    this.e.on("log", str => this.logCl.start(str,this));
+    this.e.on("log", str => this.logCl.start(str, this));
     this.e.on("test", () => this.test());
-    this.e.on("health", () => this.healthCheck());
+    this.e.on("health", () => healthCheck());
     this.e.on("setting", () => this.setting());
     this.e.on("exit", () => this.exit());
     this.e.on("stop", str => stopPro(this, str));
@@ -49,10 +54,6 @@ class CliInterface extends BaseUI {
   }
 
   setting() {
-    console.log("not implemented yet");
-  }
-
-  healthCheck() {
     console.log("not implemented yet");
   }
 

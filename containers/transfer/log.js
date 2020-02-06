@@ -31,14 +31,14 @@ const { ui } = require("../../helpers");
 //   "Saturday, January 25th 2010, 3:19 pm",
 //   "Saturday, January 25th 2020, 3:19 pm"
 // ];
-
 // /////////////////////////////////////////////////
 class LogReport {
   constructor(props) {
-    this.timeColSize = 38;
+    this.timeColSize = 40;
     this.bucketColSize = 20;
     this.paddingSize = 1;
     this.buckets = props.buckets;
+    this.field = props.field;
     this.timeContainer = props.timeContainer.length
       ? props.timeContainer
       : [moment().format("dddd, MMMM Do YYYY, h:mm a")];
@@ -95,9 +95,11 @@ class LogReport {
   }
 
   buildLog() {
-    let content = ui.horizontalLine;
+    let content = ui.horizontalLine();
     content += "\n";
-    content += ui.centralize(clc.bold("Data Transfer Statistic"));
+    content += ui.centralize(
+      clc.bold(`${this.field.toUpperCase()} Data Transfer Statistic`)
+    );
     content += "\n";
     content += this.headers();
     for (let j = 0; j < this.timeContainer.length; j++) {

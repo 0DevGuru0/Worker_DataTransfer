@@ -14,7 +14,8 @@ inquirer.createPromptModule = opt => {
   };
   promptModule.prompts = {
     checkbox: require("./prompts/checkbox"),
-    list: require("./prompts/list")
+    list: require("./prompts/list"),
+    input: require("./prompts/input")
   };
   return promptModule;
 };

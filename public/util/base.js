@@ -1,39 +1,23 @@
 const cliWidth = require("cli-width");
 const ttys = require("ttys");
 const col = require("chalk");
-
+const _ = require("lodash");
+const { ui } = require("../../helpers");
+const strWidth = require("string-width");
 class BaseUI {
-  constructor() {
-    this.width = cliWidth({
-      defaultWidth: 80,
-      output: ttys.output
-    });
-    process.stdout.on("resize", () => {
-      this.width = cliWidth({
-        defaultWidth: 80,
-        output: ttys.output
-      });
-    });
+  splitInter(inter) {
+    return _.map(inter.trim().split(/[= \s]/g), elem =>
+      elem.toLowerCase().trim()
+    );
   }
 
-  centered(str, width = this.width) {
-    if (width > this.width) width = this.width + 15;
-    let leftPadding = Math.floor((width - str.length) / 2);
-    let line = "";
-    for (let i = 0; i < leftPadding; i++) {
-      line += " ";
-    }
-    line += str;
-    console.log(line);
-  }
-
-  horizontalLine(width = this.width) {
-    if (width > this.width) width = this.width;
-    console.log(col.bold("-".repeat(width)));
-  }
-
-  verticalSpace() {
-    console.log("\n");
+  helpCommand(title, context) {
+    let content = `${ui.horizontalLine()}\n`;
+    content += `${ui.centralize(col.cyan.bold(title))}\n`;
+    content += `${ui.horizontalLine()}\n`;
+    content += `${context}\n`;
+    content += ui.horizontalLine();
+    return content;
   }
 }
 module.exports = BaseUI;

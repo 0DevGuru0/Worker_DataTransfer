@@ -1,4 +1,5 @@
-"use strict";
+"use-strict";
+
 /**
  * Base prompt implementation
  * Should be extended by prompt types.
@@ -6,18 +7,11 @@
 let _ = require("lodash");
 let col = require("chalk");
 let runAsync = require("run-async");
-let {
-  mergeMap,
-  share,
-  take,
-  filter,
-  takeUntil,
-  tap
-} = require("rxjs/operators");
-let Choices = require("../objects/choices");
 const cliCursor = require("cli-cursor");
-
+let { mergeMap, share, take, filter, takeUntil } = require("rxjs/operators");
+let Choices = require("../objects/choices");
 let ScreenManager = require("../utils/screen-manager");
+
 class Prompt {
   // parent is the class of main readline Handler in cli/ui/interface.js file exist
   constructor(que, parent, ans) {
@@ -35,7 +29,7 @@ class Prompt {
     });
 
     if (!this.opt.name) this.throwParamError("name");
-    if (!this.opt.message) this.opt.message = this.opt.name + ":";
+    if (!this.opt.message) this.opt.message = `${this.opt.name}:`;
     if (Array.isArray(this.opt.choices))
       this.opt.choices = new Choices(this.opt.choices, ans);
 
@@ -47,6 +41,7 @@ class Prompt {
   run() {
     return new Promise(res => this._run(val => res(val)));
   }
+
   _run(cb) {
     cb();
   }
@@ -70,6 +65,7 @@ class Prompt {
     //   if no process exist to be stop
     // this.parentInterface.e.emit("stop", "hideResponse");
   }
+
   handleSubmitEvents(submit) {
     let self = this;
     let asyncValidate = runAsync(this.opt.validate);
@@ -101,18 +97,20 @@ class Prompt {
   }
 
   getQuestion() {
-    let message =
-      this.opt.prefix +
-      " " +
-      col.bold(this.opt.message) +
-      this.opt.suffix +
-      col.reset(" ");
-    message +=
-      this.opt.default !== null && this.state !== "answered"
-        ? this.opt.type
-          ? col.italic.dim("[hidden]")
-          : col.dim("(" + this.opt.default + ")")
-        : "";
+    let message = `${this.opt.prefix} ${col.bold(this.opt.message)}${
+      this.opt.suffix
+    }${col.reset(" ")}`;
+
+    // Append the default if available, and if question isn't answered
+    if (this.opt.default != null && this.status !== "answered") {
+      // If default password is supplied, hide it
+      if (this.opt.type === "password") {
+        message += col.italic.dim("[hidden] ");
+      } else {
+        message += col.dim(`( ${this.opt.default} ) `);
+      }
+    }
+
     return message;
   }
 }

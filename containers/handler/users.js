@@ -55,7 +55,7 @@ module.exports = {
   usersCont: container,
   usersWorker: client => {
     const deferred = Q.defer();
-    console.log(ui.horizontalLine);
+    console.log(ui.horizontalLine());
     const main = container.onlineUsersList(client);
     const main1 = main.then(container.totalUsersList);
     main1

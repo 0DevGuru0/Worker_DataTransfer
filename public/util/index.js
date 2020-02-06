@@ -1,9 +1,9 @@
-const BaseUI = require("./base");
+const Base = require("./base");
 const ManPage = require("./man");
 const stopPro = require("./stop");
 
 module.exports = {
-  BaseUI,
+  Base,
   ManPage,
   stopPro
 };

@@ -42,12 +42,14 @@
     "lodash": "^4.17.15",
     "moment": "^2.24.0",
     "mongoose": "^5.7.1",
+    "mute-stream": "^0.0.8",
     "node-emoji": "^1.10.0",
     "node-key-sender": "^1.0.11",
     "q": "^1.5.1",
     "redis": "^2.8.0",
     "rxjs": "^6.5.4",
     "sigint": "^1.0.0",
+    "string-width": "^4.2.0",
     "ttys": "0.0.3"
   },
   "devDependencies": {

@@ -51,7 +51,7 @@ const prepareData = ({ bucket, client }) => {
     Arr.shift();
   });
   common.uiBeforeComplete(time);
-  console.log(ui.horizontalLine);
+  console.log(ui.horizontalLine());
   return { staticsBucket, Arr };
 };
 const saveFunction = ({ fetch, Arr, staticsBucket }) => {
@@ -69,14 +69,19 @@ const saveFunction = ({ fetch, Arr, staticsBucket }) => {
         );
       }
       deferred.resolve(
-        logReport({ buckets: { [time]: setState }, timeContainer: [time] })
+        logReport({
+          buckets: { [time]: setState },
+          timeContainer: [time],
+          field: "auto"
+        })
       );
     })
     .catch(async ({ err, setState }) => {
       // 🤔 Save statisticLogs to DB
       const logs = await logReport({
         buckets: { [time]: setState },
-        timeContainer: [time]
+        timeContainer: [time],
+        field: "auto"
       });
       try {
         const reply = await fetch.getTransferStaticsData();

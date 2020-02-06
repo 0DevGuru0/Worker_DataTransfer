@@ -36,12 +36,12 @@ module.exports = class Man extends BaseUI {
       lengths.push(padding.length);
       lines.push(line);
     });
-    // TODO: not measure properly
-    this.horizontalLine(74);
-    this.centered(`__CLI Manual__`, 70);
-    this.horizontalLine(74);
-    _.forEach(lines, el => console.log(el));
-    this.horizontalLine(74);
-    this.verticalSpace();
+    console.log(this.horizontalLine(74));
+    console.log(this.centered(`__CLI Manual__`, 70));
+    console.log(this.horizontalLine(74));
+    _.forEach(lines, el => {
+      console.log(el);
+    });
+    console.log(this.horizontalLine());
   }
 };

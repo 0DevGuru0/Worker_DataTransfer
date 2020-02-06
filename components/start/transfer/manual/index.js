@@ -25,7 +25,7 @@ module.exports = () => {
         })
 
         .finally(async () => {
-          console.log(ui.horizontalLine);
+          console.log(ui.horizontalLine());
           if (this.mongoose && this.mongoose.connection.readyState === 1)
             await disconnectFromDBs({
               mongoose: this.mongoose,

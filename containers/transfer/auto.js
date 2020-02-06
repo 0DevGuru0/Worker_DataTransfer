@@ -25,7 +25,7 @@ const MainClass = class AutoTransfer {
     let buckets = JSON.parse(await this.client.hget("transferStatics", "auto"));
     let { timeContainer } = this;
     this.timeContainer = [];
-    return logReport({ buckets, timeContainer });
+    return logReport({ buckets, timeContainer, field: "auto" });
   }
 
   dataProvisioner() {
@@ -124,7 +124,7 @@ const MainClass = class AutoTransfer {
     this.Arr = [];
     let time = moment().format("dddd, MMMM Do YYYY, h:mm:ss a");
     console.log(
-      `${ui.horizontalLine}\n${col.black.bold.bgYellow("[ Data Transfer ]")}`,
+      `${ui.horizontalLine()}\n${col.black.bold.bgYellow("[ Data Transfer ]")}`,
       "Start At:\t",
       `${time}\n`
     );
