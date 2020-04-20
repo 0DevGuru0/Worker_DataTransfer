@@ -41,10 +41,10 @@ class CliInterface extends Base {
 
   eventListeners() {
     this.e.on("start", str => this.startCl.start(str, this));
-    this.e.on("status", () => this.statusCl.master(this.rl));
+    this.e.on("status", () => this.statusCl.master(this));
     this.e.on("log", str => this.logCl.start(str, this));
     this.e.on("test", () => this.test());
-    this.e.on("health", () => healthCheck());
+    this.e.on("health", () => healthCheck(this));
     this.e.on("setting", () => this.setting());
     this.e.on("exit", () => this.exit());
     this.e.on("stop", str => stopPro(this, str));

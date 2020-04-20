@@ -28,9 +28,8 @@ module.exports = async ({ mongoose, redis }) => {
         );
         errContainer.push("mongo");
       });
-
   //  check redis connectivity then disconnected
-  if (redis.ready)
+  if (redis.ready || redis.connected)
     await redisDisconnet()
       .then(() => {
         console.log(

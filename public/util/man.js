@@ -1,7 +1,7 @@
 const clc = require("chalk");
 const _ = require("lodash");
 const BaseUI = require("./base");
-const emoji = require("node-emoji");
+const { ui } = require("../../helpers");
 
 module.exports = class Man extends BaseUI {
   constructor() {
@@ -36,12 +36,12 @@ module.exports = class Man extends BaseUI {
       lengths.push(padding.length);
       lines.push(line);
     });
-    console.log(this.horizontalLine(74));
-    console.log(this.centered(`__CLI Manual__`, 70));
-    console.log(this.horizontalLine(74));
+    console.log(ui.horizontalLine(74));
+    console.log(ui.centralize(`__CLI Manual__`, 70));
+    console.log(ui.horizontalLine(74));
     _.forEach(lines, el => {
       console.log(el);
     });
-    console.log(this.horizontalLine());
+    console.log(ui.horizontalLine());
   }
 };

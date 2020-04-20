@@ -1,3 +1,4 @@
+/* eslint-disable no-shadow */
 const Q = require("q");
 const _ = require("lodash");
 const moment = require("moment");
@@ -7,8 +8,6 @@ const common = require("./common");
 const { ui, errorModel } = require("../../helpers");
 const { usersCont, visitorsCont } = require("../handler");
 const logReport = require("./log");
-
-const time = moment().format("dddd, MMMM Do YYYY, h:mm:ss a");
 
 function FetchData(client) {
   this.client = client;
@@ -39,75 +38,62 @@ const prepareData = ({ bucket, client }) => {
   const allUsers = bucket.indexOf("all_user_buckets");
   if (allUsers > -1) bucket.splice(allUsers, 1, ..._allUsers);
   bucket = _.uniq(bucket);
-  const staticsBucket = bucket.join(":");
   const firstBucket = bucket.shift();
   const Arr = [];
+
+  common.uiBeforeComplete(moment().format("dddd, MMMM Do YYYY, h:mm:ss a"));
 
   Arr.push(buckets[firstBucket]({ client }));
   _.forEach(bucket, elem => {
     const arrLength = Arr.length - 1;
-    const currentBucket = buckets[elem];
-    Arr.push(Arr[arrLength].then(currentBucket));
+    Arr.push(
+      Arr[arrLength].then(({ err, client, setState }) => {
+        if (err) console.log(err);
+        return buckets[elem]({ client, setState });
+      })
+    );
     Arr.shift();
   });
-  common.uiBeforeComplete(time);
   console.log(ui.horizontalLine());
-  return { staticsBucket, Arr };
+  return { Arr };
 };
-const saveFunction = ({ fetch, Arr, staticsBucket }) => {
+
+const saveFunction = ({ fetch, Arr }) => {
   const deferred = Q.defer();
-  Arr[0]
-    .then(async ({ setState }) => {
-      let reply;
-      try {
-        reply = await fetch.getTransferStaticsData();
-        reply[time] = staticsBucket.split(":");
-        await fetch.setTransferStaticsData(reply);
-      } catch (err) {
-        deferred.reject(
-          errorModel("ManualTransfer", "StoreTransferStatics", err)
-        );
-      }
-      deferred.resolve(
-        logReport({
-          buckets: { [time]: setState },
-          timeContainer: [time],
-          field: "auto"
-        })
-      );
-    })
-    .catch(async ({ err, setState }) => {
-      // 🤔 Save statisticLogs to DB
-      const logs = await logReport({
-        buckets: { [time]: setState },
-        timeContainer: [time],
-        field: "auto"
-      });
-      try {
-        const reply = await fetch.getTransferStaticsData();
-        reply[time] = "fail";
-        await fetch.setTransferStaticsData(reply);
-      } catch (fetchError) {
-        deferred.reject({
-          mainErr: err,
-          err: errorModel("ManualTransfer", "StoreTransferStatics", fetchError),
-          logs
-        });
-      }
-      // 🤔 Return err after success store
-      deferred.reject({ mainErr: err, err: null, logs });
+  Arr[0].then(async ({ err, setState }) => {
+    if (err) console.log(err);
+    let time = moment().format("dddd, MMMM Do YYYY, h:mm:ss a");
+    const log = logReport({
+      buckets: { [time]: setState },
+      timeContainer: [time],
+      field: "manual"
     });
+    let reply;
+    try {
+      reply = await fetch.getTransferStaticsData();
+      reply[time] = setState;
+      await fetch.setTransferStaticsData(reply);
+    } catch (err) {
+      deferred.reject({
+        err: errorModel("ManualTransfer", "StoreTransferStatics", err),
+        logs: log
+      });
+    }
+    deferred.resolve(log);
+  });
+
   return deferred.promise;
 };
+
 const store = Q.fbind(({ fetch, bucket, client }) => {
-  const { staticsBucket, Arr } = prepareData({ bucket, client });
+  const { Arr } = prepareData({ bucket, client });
   return saveFunction({
-    staticsBucket,
     Arr,
     fetch,
     bucket
   });
 });
+
 module.exports = (redis, bucket) => {
   const deferred = Q.defer();
   const client = asyncRedis.decorate(redis);

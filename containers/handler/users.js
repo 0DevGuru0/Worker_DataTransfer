@@ -16,7 +16,9 @@ const container = {
         setState.push("onlineUsersList");
         deferred.resolve({ client, setState });
       })
-      .catch(err => deferred.reject({ err, setState }));
+      .catch(err => {
+        deferred.resolve({ err, setState, client });
+      });
     return deferred.promise;
   },
   totalUsersVerified: ({ client, setState = [] }) => {
@@ -31,7 +33,9 @@ const container = {
         setState.push("totalUsersVerified");
         deferred.resolve({ client, setState });
       })
-      .catch(err => deferred.reject({ err, setState }));
+      .catch(({ err }) => {
+        deferred.resolve({ err, setState, client });
+      });
     return deferred.promise;
   },
   totalUsersList: ({ client, setState = [] }) => {
@@ -46,7 +50,9 @@ const container = {
         setState.push("totalUsersList");
         deferred.resolve({ client, setState });
       })
-      .catch(err => deferred.reject({ err, setState }));
+      .catch(({ err }) => {
+        deferred.resolve({ err, setState, client });
+      });
     return deferred.promise;
   }
 };

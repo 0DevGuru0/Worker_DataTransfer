@@ -102,9 +102,9 @@ class LogsComponent extends Base {
     return RedisDB().then(redis =>
       this.fetchData(redis, "transferStatics", method)
         .then(res => {
+          if (!res[0]) return console.log("No Data Has Been Set Yet...");
           if (res.length === this.methods.length - 1) {
             let [auto, manual] = res;
-
             auto = JSON.parse(auto);
             console.log(
               logReport({

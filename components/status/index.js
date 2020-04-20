@@ -8,6 +8,7 @@ const { Gauge, Progress } = require("clui");
 const { MongoDB, RedisDB } = require("../../database");
 const ask = require("../../vendor/inquirer");
 const { Base } = require("../../public/util");
+const { ui } = require("../../helpers");
 
 class StatusHandler extends Base {
   constructor(props) {
@@ -184,7 +185,9 @@ class StatusHandler extends Base {
     this.databaseStatus(inter);
   }
 
-  master(inter) {
+  master(parent) {
+    let inter = parent.rl;
+    ask.promptParent = parent;
     let question = [
       {
         type: "list",

@@ -44,7 +44,7 @@ module.exports = function FetchData({ config, client }) {
       return { monthCountryState, monthCityState };
     },
     fetchDaysData: async () => {
-      return await this.client.hgetall("visitors:state");
+      return this.client.hgetall("visitors:state");
     },
     deleteMonthData: async (Year, Month) => {
       //TODO: TEST
@@ -63,7 +63,7 @@ module.exports = function FetchData({ config, client }) {
     deleteDaysData: async (Year, Month) => {
       let dayState = await this.dayStateContainer;
       let keys = dayState.filter(el => {
-        let regex = new RegExp(Year + "/" + Month + "/\\d{1,2}", "g");
+        let regex = new RegExp(`${Year}/${Month}/\\d{1,2}`, "g");
         if (el.match(regex)) return true;
       });
       // TODO: TEST
