@@ -10,7 +10,7 @@
 
 ### Features:
 
-1- Transfer data in automatically or manually.  
+1- Transfer data in automatically or manually fashion.  
 2- Stop operation safely with high rescue disaster.  
 3- Interactive user interface with asking question in each steps.  
 4- Multilevel promotion system for caching commands.  
