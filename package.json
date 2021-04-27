@@ -46,7 +46,7 @@
     "node-emoji": "^1.10.0",
     "node-key-sender": "^1.0.11",
     "q": "^1.5.1",
-    "redis": "^2.8.0",
+    "redis": "^3.1.1",
     "rxjs": "^6.5.4",
     "sigint": "^1.0.0",
     "string-width": "^4.2.0",
