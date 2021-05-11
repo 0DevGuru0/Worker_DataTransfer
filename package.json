@@ -39,7 +39,7 @@
     "figlet": "^1.2.4",
     "figures": "^3.1.0",
     "inquirer": "^7.0.1",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.21",
     "moment": "^2.24.0",
     "mongoose": "^5.7.1",
     "mute-stream": "^0.0.8",
