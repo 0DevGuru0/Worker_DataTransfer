@@ -41,7 +41,7 @@
     "inquirer": "^7.0.1",
     "lodash": "^4.17.15",
     "moment": "^2.24.0",
-    "mongoose": "^5.7.1",
+    "mongoose": "^5.13.15",
     "mute-stream": "^0.0.8",
     "node-emoji": "^1.10.0",
     "node-key-sender": "^1.0.11",
